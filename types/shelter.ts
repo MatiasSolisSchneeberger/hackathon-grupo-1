@@ -13,7 +13,15 @@ export type TipoDocumento = 'dni' | 'pasaporte' | 'otro';
 
 export type Genero = 'femenino' | 'masculino' | 'otro' | 'no_declara';
 
-export type VinculoFamiliar = 'jefe_hogar' | 'pareja' | 'hijo' | 'familiar' | 'sin_vinculo';
+// Valores del enum public.vinculo_familiar definido en Supabase.
+export type VinculoFamiliar =
+  | 'responsable'
+  | 'conyuge'
+  | 'hijo_a'
+  | 'padre_madre'
+  | 'hermano_a'
+  | 'otro_familiar'
+  | 'sin_vinculo';
 
 // Tabla public.perfiles
 export interface Perfil {

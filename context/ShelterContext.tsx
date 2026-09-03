@@ -33,14 +33,14 @@ interface ShelterContextType {
   estadias: Estadia[];
 
   // Mutators strictly matching DB schema
-  addRefugio: (data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => void;
+  addRefugio: (data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => Promise<void>;
   addPersonaConEstadia: (
     personaData: Omit<Persona, 'id' | 'creado_en' | 'actualizado_en'>,
     estadiaData: Omit<Estadia, 'id' | 'persona_id' | 'fecha_ingreso' | 'creado_en' | 'actualizado_en'>,
-    nuevoGrupo?: { codigo: string; apellido_referencia: string; domicilio_origen?: string }
-  ) => void;
-  registrarEgreso: (estadiaId: number, motivoEgreso: string, observacionesEgreso?: string) => void;
-  addGrupoFamiliar: (data: Omit<GrupoFamiliar, 'id' | 'fecha_alta' | 'creado_en' | 'actualizado_en'>) => void;
+     nuevoGrupo?: { codigo: string; apellido_referencia: string; domicilio_origen?: string; observaciones?: string }
+  ) => Promise<void>;
+  registrarEgreso: (estadiaId: number, motivoEgreso: string, observacionesEgreso?: string) => Promise<void>;
+  addGrupoFamiliar: (data: Omit<GrupoFamiliar, 'id' | 'fecha_alta' | 'creado_en' | 'actualizado_en'>) => Promise<void>;
 
   toastMessage: string | null;
   setToastMessage: (msg: string | null) => void;
@@ -201,7 +201,7 @@ const initialEstadias: Estadia[] = [
     refugio_id: 1,
     fecha_ingreso: '2026-09-03T07:45:00Z',
     grupo_id: 101,
-    vinculo: 'jefe_hogar',
+    vinculo: 'responsable',
     observaciones: 'Ingresó en buen estado general.',
     registrado_por: 'usr-social-1',
   },
@@ -211,7 +211,7 @@ const initialEstadias: Estadia[] = [
     refugio_id: 1,
     fecha_ingreso: '2026-09-03T07:45:00Z',
     grupo_id: 101,
-    vinculo: 'hijo',
+    vinculo: 'hijo_a',
     observaciones: 'Acompañado por su madre.',
     registrado_por: 'usr-social-1',
   },
@@ -230,13 +230,24 @@ const initialEstadias: Estadia[] = [
     refugio_id: 2,
     fecha_ingreso: '2026-09-03T09:30:00Z',
     grupo_id: 102,
-    vinculo: 'jefe_hogar',
+    vinculo: 'responsable',
     observaciones: 'Asignada litera 08.',
     registrado_por: 'usr-social-1',
   },
 ];
 
 const ShelterContext = createContext<ShelterContextType | undefined>(undefined);
+
+async function postJson<T>(url: string, payload: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'No se pudo guardar la información.');
+  return result as T;
+}
 
 export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser: UserProfile }> = ({
   children,
@@ -267,117 +278,61 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
   }, [toastMessage]);
 
   // Crear Refugio (Tabla public.refugios)
-  const addRefugio = (data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => {
-    const newId = Date.now();
-    const newRefugio: Refugio = {
-      ...data,
-      id: newId,
-      activo: true,
-      creado_en: new Date().toISOString(),
-      actualizado_en: new Date().toISOString(),
-      creado_por: currentUser.id,
-    };
-
-    setRefugios((prev) => [...prev, newRefugio]);
-    setToastMessage(`🏢 Refugio "${newRefugio.nombre}" creado exitosamente.`);
+  const addRefugio = async (data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => {
+    try {
+      const newRefugio = await postJson<Refugio>('/api/refugios', data);
+      setRefugios((prev) => [...prev, newRefugio]);
+      setToastMessage(`Refugio "${newRefugio.nombre}" creado exitosamente.`);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'No se pudo crear el refugio.');
+    }
   };
 
   // Crear Grupo Familiar (Tabla public.grupos_familiares)
-  const addGrupoFamiliar = (data: Omit<GrupoFamiliar, 'id' | 'fecha_alta' | 'creado_en' | 'actualizado_en'>) => {
-    const newId = Date.now();
-    const newGrupo: GrupoFamiliar = {
-      ...data,
-      id: newId,
-      fecha_alta: new Date().toISOString(),
-      creado_en: new Date().toISOString(),
-      actualizado_en: new Date().toISOString(),
-      creado_por: currentUser.id,
-    };
-
-    setGruposFamiliares((prev) => [...prev, newGrupo]);
-    setToastMessage(`👨‍👩‍👧 Grupo Familiar "${newGrupo.codigo}" creado.`);
+  const addGrupoFamiliar = async (data: Omit<GrupoFamiliar, 'id' | 'fecha_alta' | 'creado_en' | 'actualizado_en'>) => {
+    try {
+      const newGrupo = await postJson<GrupoFamiliar>('/api/grupos-familiares', data);
+      setGruposFamiliares((prev) => [...prev, newGrupo]);
+      setToastMessage(`Grupo Familiar "${newGrupo.codigo}" creado.`);
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'No se pudo crear el grupo familiar.');
+    }
   };
 
   // Dar de alta Persona + Estadía (Tablas public.personas y public.estadias)
   const addPersonaConEstadia = (
     personaData: Omit<Persona, 'id' | 'creado_en' | 'actualizado_en'>,
     estadiaData: Omit<Estadia, 'id' | 'persona_id' | 'fecha_ingreso' | 'creado_en' | 'actualizado_en'>,
-    nuevoGrupo?: { codigo: string; apellido_referencia: string; domicilio_origen?: string }
+     nuevoGrupo?: { codigo: string; apellido_referencia: string; domicilio_origen?: string; observaciones?: string }
   ) => {
-    const newPersonaId = `per-${Date.now()}`;
-    const normDni = personaData.numero_documento
-      ? personaData.numero_documento.replace(/[^A-Za-z0-9]/g, '').toUpperCase()
-      : undefined;
-
-    const newPersona: Persona = {
-      ...personaData,
-      id: newPersonaId,
-      numero_documento_norm: normDni,
-      creado_en: new Date().toISOString(),
-      actualizado_en: new Date().toISOString(),
-      creado_por: currentUser.id,
-    };
-
-    let grupoIdAsignado = estadiaData.grupo_id;
-
-    // Si creó un nuevo grupo familiar en el mismo acto
-    if (nuevoGrupo) {
-      const newGrupoId = Date.now();
-      const newGrupoObj: GrupoFamiliar = {
-        id: newGrupoId,
-        refugio_id: estadiaData.refugio_id,
-        codigo: nuevoGrupo.codigo.toUpperCase(),
-        apellido_referencia: nuevoGrupo.apellido_referencia,
-        responsable_persona_id: newPersonaId,
-        domicilio_origen: nuevoGrupo.domicilio_origen,
-        fecha_alta: new Date().toISOString(),
-        creado_por: currentUser.id,
-        creado_en: new Date().toISOString(),
-        actualizado_en: new Date().toISOString(),
-      };
-      setGruposFamiliares((prev) => [...prev, newGrupoObj]);
-      grupoIdAsignado = newGrupoId;
-    }
-
-    const newEstadia: Estadia = {
-      ...estadiaData,
-      id: Date.now(),
-      persona_id: newPersonaId,
-      grupo_id: grupoIdAsignado,
-      fecha_ingreso: new Date().toISOString(),
-      registrado_por: currentUser.id,
-      creado_en: new Date().toISOString(),
-      actualizado_en: new Date().toISOString(),
-    };
-
-    setPersonas((prev) => [newPersona, ...prev]);
-    setEstadias((prev) => [newEstadia, ...prev]);
-
-    const targetRefugio = refugios.find((r) => r.id === estadiaData.refugio_id);
-    setToastMessage(`✅ Persona ${newPersona.apellido}, ${newPersona.nombre} registrada con estadía en "${targetRefugio?.nombre}".`);
+    return postJson<{ persona: Persona; estadia: Estadia }>('/api/ingresos', {
+      persona: personaData,
+      estadia: estadiaData,
+      nuevo_grupo: nuevoGrupo,
+    }).then(({ persona, estadia }) => {
+      setPersonas((prev) => [persona, ...prev]);
+      setEstadias((prev) => [estadia, ...prev]);
+      const targetRefugio = refugios.find((r) => r.id === estadia.refugio_id);
+       setToastMessage(`Persona ${persona.apellido}, ${persona.nombre} registrada con estadía en "${targetRefugio?.nombre}".`);
+     }).catch((error) => {
+       setToastMessage(error instanceof Error ? error.message : 'No se pudo registrar el ingreso.');
+       throw error;
+     });
   };
 
   // Registrar egreso de persona (Tabla public.estadias update fecha_egreso)
-  const registrarEgreso = (estadiaId: number, motivoEgreso: string, observacionesEgreso?: string) => {
-    const timestampNow = new Date().toISOString();
-
-    setEstadias((prev) =>
-      prev.map((e) => {
-        if (e.id === estadiaId) {
-          return {
-            ...e,
-            fecha_egreso: timestampNow,
-            motivo_egreso: motivoEgreso,
-            observaciones: observacionesEgreso ? `${e.observaciones || ''} [Egreso: ${observacionesEgreso}]` : e.observaciones,
-            egreso_registrado_por: currentUser.id,
-            actualizado_en: timestampNow,
-          };
-        }
-        return e;
-      })
-    );
-
-    setToastMessage(`🚪 Egreso registrado correctamente en sistema.`);
+  const registrarEgreso = async (estadiaId: number, motivoEgreso: string, observacionesEgreso?: string) => {
+    try {
+      const updated = await postJson<Estadia>('/api/egresos', {
+        estadia_id: estadiaId,
+        motivo_egreso: motivoEgreso,
+        observaciones: observacionesEgreso,
+      });
+      setEstadias((prev) => prev.map((estadia) => estadia.id === updated.id ? updated : estadia));
+      setToastMessage('Egreso registrado correctamente en sistema.');
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'No se pudo registrar el egreso.');
+    }
   };
 
   return (

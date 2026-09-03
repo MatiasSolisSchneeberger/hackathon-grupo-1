@@ -62,7 +62,7 @@ export const RegisterForm: React.FC = () => {
 
           <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-semibold flex gap-2 items-start">
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            <span>Tu cuenta se crea como Comunicador Social. Un administrador puede cambiar tu rol.</span>
+            <span>Tu cuenta se crea como Trabajador Social. Un administrador puede cambiar tu rol.</span>
           </div>
 
           <form action={handleSubmit} className="space-y-3">

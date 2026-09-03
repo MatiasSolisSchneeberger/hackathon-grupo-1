@@ -101,9 +101,9 @@ export const Header: React.FC = () => {
                     className={`p-1 px-2 rounded text-[11px] font-bold ${
                       currentRole === 'social_worker' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-800'
                     }`}
-                    title="[PREVISUALIZACIÓN] Cambiar a Vista Comunicador"
+                    title="[PREVISUALIZACIÓN] Cambiar a Vista Trabajador"
                   >
-                    Comunicador
+                    Trabajador
                   </button>
                 </div>
               )}

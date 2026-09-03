@@ -2,11 +2,11 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { Suspense } from 'react';
 
 interface LoginPageProps {
-  searchParams: { motivo?: string };
+  searchParams: Promise<{ motivo?: string }>;
 }
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
-  const motivo = searchParams.motivo;
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const { motivo } = await searchParams;
 
   return (
     <div>

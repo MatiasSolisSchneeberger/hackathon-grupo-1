@@ -9,9 +9,9 @@ export const userRoleToDbRol = (userRole: UserRole): DbRol => {
 };
 
 export const getRoleLabel = (role: UserRole): string => {
-  return role === 'admin' ? '🛡️ Admin / Dueño' : '📋 Comunicador';
+  return role === 'admin' ? '🛡️ Admin / Dueño' : '📋 Trabajador';
 };
 
 export const getDbRoleLabel = (dbRol: DbRol): string => {
-  return dbRol === 'admin' ? '🛡️ Admin / Dueño' : '📋 Comunicador';
+  return dbRol === 'admin' ? '🛡️ Admin / Dueño' : '📋 Trabajador';
 };

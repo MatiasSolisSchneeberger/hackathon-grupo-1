@@ -89,7 +89,7 @@ export const SocialWorkerRegistryScreen: React.FC = () => {
 
             <select
               value={estadoFilter}
-              onChange={(e) => setEstadoFilter(e.target.value as any)}
+          onChange={(e) => setEstadoFilter(e.target.value as 'activas' | 'egresadas' | 'todas')}
               className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
             >
               <option value="activas">🟢 Estadías Activas (Sin Egreso)</option>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { useShelter } from '@/context/ShelterContext';
 import { AdminScreenType, SocialScreenType } from '@/types/shelter';
 import { 
@@ -9,14 +10,12 @@ import {
   Search, 
   Users, 
   UserPlus, 
-  FileText, 
   Menu, 
   X, 
   ShieldCheck, 
   ClipboardList,
   UserCheck,
   Home,
-  LogOut
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -27,7 +26,6 @@ export const Sidebar: React.FC = () => {
     activeSocialScreen, 
     setActiveSocialScreen,
     refugios,
-    personas,
     estadias,
     gruposFamiliares,
     perfiles
@@ -37,7 +35,7 @@ export const Sidebar: React.FC = () => {
 
   const estadiasActivasCount = estadias.filter((e) => !e.fecha_egreso).length;
 
-  const adminMenuItems: { id: AdminScreenType; label: string; icon: any; badge?: string | number }[] = [
+  const adminMenuItems: { id: AdminScreenType; label: string; icon: LucideIcon; badge?: string | number }[] = [
     { id: 'dashboard', label: 'Dashboard General', icon: LayoutDashboard },
     { id: 'refugios', label: 'Gestión de Refugios', icon: Building2, badge: refugios.length },
     { id: 'estadias', label: 'Estadías y Personas', icon: Users, badge: estadiasActivasCount },
@@ -45,7 +43,7 @@ export const Sidebar: React.FC = () => {
     { id: 'perfiles', label: 'Perfiles y Asignaciones', icon: UserCheck, badge: perfiles.length },
   ];
 
-  const socialMenuItems: { id: SocialScreenType; label: string; icon: any; badge?: string | number }[] = [
+  const socialMenuItems: { id: SocialScreenType; label: string; icon: LucideIcon; badge?: string | number }[] = [
     { id: 'ingreso', label: 'Registrar Ingreso', icon: UserPlus },
     { id: 'estadias_activas', label: 'Estadías Activas', icon: Users, badge: estadiasActivasCount },
     { id: 'grupos', label: 'Grupos Familiares', icon: Home, badge: gruposFamiliares.length },

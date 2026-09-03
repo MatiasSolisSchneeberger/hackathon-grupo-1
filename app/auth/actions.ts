@@ -22,7 +22,7 @@ export const registrarse = async (
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -34,6 +34,16 @@ export const registrarse = async (
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (data.user) {
+    const { error: profileError } = await supabase.from('perfiles').upsert({
+      id: data.user.id,
+      nombre_completo,
+      rol: 'trabajador_social',
+      activo: true,
+    });
+    if (profileError) return { error: `Cuenta creada, pero no se pudo crear el perfil: ${profileError.message}` };
   }
 
   revalidatePath('/', 'layout');

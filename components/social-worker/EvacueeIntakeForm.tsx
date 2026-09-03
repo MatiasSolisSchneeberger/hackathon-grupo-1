@@ -12,7 +12,7 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
   const { refugios, gruposFamiliares, addPersonaConEstadia } = useShelter();
 
   // Selected Refugio for stay
-  const [refugioId, setRefugioId] = useState<number>(refugios[0]?.id || 1);
+  const [refugioId, setRefugioId] = useState<number>(refugios[0]?.id || 0);
 
   // Persona Fields (public.personas)
   const [nombre, setNombre] = useState('');
@@ -35,15 +35,32 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
   // New Group Fields (public.grupos_familiares)
   const [codigoGrupo, setCodigoGrupo] = useState('');
   const [domicilioOrigen, setDomicilioOrigen] = useState('');
+  const [observacionesGrupo, setObservacionesGrupo] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState('');
 
   // Filter groups for selected refugio
-  const gruposRefugio = gruposFamiliares.filter((g) => g.refugio_id === refugioId);
+  const refugiosActivos = refugios.filter((refugio) => refugio.activo);
+  const gruposRefugio = gruposFamiliares.filter(
+    (grupo) => grupo.refugio_id === refugioId && !grupo.fecha_cierre,
+  );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
 
     if (nombre.trim().length < 2 || apellido.trim().length < 2) {
-      alert('Nombre y Apellido deben tener al menos 2 caracteres.');
+      setFormError('Nombre y apellido deben tener al menos 2 caracteres.');
+      return;
+    }
+
+    if (!refugioId || refugiosActivos.length === 0) {
+      setFormError('Seleccioná un refugio activo antes de registrar el ingreso.');
+      return;
+    }
+
+    if (fechaNacimiento && fechaNacimiento > new Date().toISOString().slice(0, 10)) {
+      setFormError('La fecha de nacimiento no puede ser futura.');
       return;
     }
 
@@ -54,28 +71,37 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
         codigo: generatedCode,
         apellido_referencia: apellido.trim(),
         domicilio_origen: domicilioOrigen.trim() || undefined,
+        observaciones: observacionesGrupo.trim() || undefined,
       };
     }
 
-    addPersonaConEstadia(
-      {
-        tipo_documento: tipoDocumento,
-        numero_documento: numeroDocumento.trim() || undefined,
-        apellido: apellido.trim(),
-        nombre: nombre.trim(),
-        fecha_nacimiento: fechaNacimiento || undefined,
-        genero,
-        telefono: telefono.trim() || undefined,
-        observaciones: observacionesPersona.trim() || undefined,
-      },
-      {
-        refugio_id: refugioId,
-        vinculo,
-        grupo_id: !crearNuevoGrupo && grupoExistenteId !== '' ? Number(grupoExistenteId) : undefined,
-        observaciones: observacionesEstadia.trim() || undefined,
-      },
-      nuevoGrupoPayload
-    );
+    setIsSaving(true);
+    try {
+      await addPersonaConEstadia(
+        {
+          tipo_documento: tipoDocumento,
+          numero_documento: numeroDocumento.trim() || undefined,
+          apellido: apellido.trim(),
+          nombre: nombre.trim(),
+          fecha_nacimiento: fechaNacimiento || undefined,
+          genero,
+          telefono: telefono.trim() || undefined,
+          observaciones: observacionesPersona.trim() || undefined,
+        },
+        {
+          refugio_id: refugioId,
+          vinculo,
+          grupo_id: !crearNuevoGrupo && grupoExistenteId !== '' ? Number(grupoExistenteId) : undefined,
+          observaciones: observacionesEstadia.trim() || undefined,
+        },
+        nuevoGrupoPayload
+      );
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'No se pudo registrar el ingreso.');
+      return;
+    } finally {
+      setIsSaving(false);
+    }
 
     // Reset Form
     setNombre('');
@@ -89,6 +115,7 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
     setGrupoExistenteId('');
     setCodigoGrupo('');
     setDomicilioOrigen('');
+    setObservacionesGrupo('');
 
     if (onSuccessTab) {
       onSuccessTab();
@@ -109,6 +136,11 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {formError && (
+            <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+              {formError}
+            </div>
+          )}
           {/* SECCION 0: Refugio de Destino */}
           <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-200 flex items-center gap-2">
@@ -119,7 +151,7 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
               onChange={(e) => setRefugioId(Number(e.target.value))}
               className="h-10 w-full rounded-xl border border-blue-300 bg-white px-3 py-1 text-sm font-bold text-blue-900 shadow-xs dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-100"
             >
-              {refugios.map((r) => (
+              {refugiosActivos.map((r) => (
                 <option key={r.id} value={r.id}>
                   🏢 {r.nombre} ({r.direccion}, {r.localidad}) — Capacidad: {r.capacidad}
                 </option>
@@ -254,10 +286,12 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
                   className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950"
                 >
                   <option value="sin_vinculo">Sin Vínculo (Ingreso Individual)</option>
-                  <option value="jefe_hogar">Jefe de Hogar / Responsable</option>
-                  <option value="pareja">Pareja / Cónyuge</option>
-                  <option value="hijo">Hijo / Menor a cargo</option>
-                  <option value="familiar">Familiar Directo</option>
+                  <option value="responsable">Responsable del grupo</option>
+                  <option value="conyuge">Cónyuge / Pareja</option>
+                  <option value="hijo_a">Hijo/a</option>
+                  <option value="padre_madre">Padre / Madre</option>
+                  <option value="hermano_a">Hermano/a</option>
+                  <option value="otro_familiar">Otro familiar</option>
                 </select>
               </div>
 
@@ -328,6 +362,19 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
                       onChange={(e) => setDomicilioOrigen(e.target.value)}
                     />
                   </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Observaciones del Grupo Familiar
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Ej: Evacuados por anegamiento de vivienda..."
+                      value={observacionesGrupo}
+                      onChange={(e) => setObservacionesGrupo(e.target.value)}
+                      className="w-full rounded-md border border-zinc-300 p-2 text-xs dark:bg-zinc-950 dark:border-zinc-700"
+                    />
+                  </div>
                 </>
               )}
             </div>
@@ -357,9 +404,10 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
               type="submit"
               size="lg"
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 shadow-md"
+              disabled={isSaving || refugiosActivos.length === 0}
             >
               <CheckCircle2 className="h-5 w-5 mr-2" />
-              Guardar Persona y Dar de Alta Estadía
+              {isSaving ? 'Guardando ingreso...' : 'Guardar Persona y Dar de Alta Estadía'}
             </Button>
           </div>
         </form>
