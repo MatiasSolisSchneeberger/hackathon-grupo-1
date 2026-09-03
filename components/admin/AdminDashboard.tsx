@@ -10,15 +10,12 @@ import { ShelterManagementScreen } from '@/components/admin/ShelterManagementScr
 import { AdminEvacueesScreen } from '@/components/admin/AdminEvacueesScreen';
 import { GruposFamiliaresScreen } from '@/components/shared/GruposFamiliaresScreen';
 import { PerfilesAsignacionesScreen } from '@/components/admin/PerfilesAsignacionesScreen';
-import { 
-  Users, 
-  Building2, 
-  Home, 
-  UserCheck, 
-  Shield, 
-  CheckCircle2, 
-  MapPin, 
-  ArrowRight 
+import {
+  Users,
+  Building2,
+  Home,
+  UserCheck,
+  Shield
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -173,73 +170,32 @@ export const AdminDashboard: React.FC = () => {
             const ocupadas = estadias.filter((e) => e.refugio_id === r.id && !e.fecha_egreso).length;
             const pct = Math.round((ocupadas / r.capacidad) * 100);
 
-                return (
-                  <div
-                    key={s.id}
-                    className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 space-y-2"
+            return (
+              <div
+                key={r.id}
+                className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 space-y-2"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{r.nombre}</span>
+                  <Badge variant={pct >= 90 ? 'destructive' : pct >= 75 ? 'warning' : 'secondary'}>
+                    {ocupadas}/{r.capacidad}
+                  </Badge>
+                </div>
+                <Progress value={pct} className="h-2" />
+                <div className="flex justify-between text-xs text-zinc-500 pt-1">
+                  <span>Ocupación: {pct}%</span>
+                  <button
+                    onClick={() => setActiveAdminScreen('refugios')}
+                    className="text-blue-600 font-bold hover:underline"
                   >
-                    <div className="flex justify-between items-start">
-                      <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{s.name}</span>
-                      <Badge variant={sPct >= 90 ? 'destructive' : sPct >= 75 ? 'warning' : 'secondary'}>
-                        {s.occupied}/{s.capacity}
-                      </Badge>
-                    </div>
-                    <Progress value={sPct} className="h-2" />
-                    <div className="flex justify-between text-xs text-zinc-500 pt-1">
-                      <span>Ocupación: {sPct}%</span>
-                      <button
-                        onClick={() => {
-                          setSelectedShelterId(s.id);
-                          setActiveAdminScreen('shelter_detail');
-                        }}
-                        className="text-blue-600 font-bold hover:underline"
-                      >
-                        Ver Alimentos & Camas →
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center justify-between">
-                <span>Insumos y Alimentos Críticos</span>
-                <Package className="h-5 w-5 text-amber-500" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {lowStockResources.length === 0 ? (
-                <p className="text-xs text-zinc-500 text-center py-4">No hay insumos críticos.</p>
-              ) : (
-                lowStockResources.map((res) => (
-                  <div key={res.id} className="p-3 rounded-lg border border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/30 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="font-bold block text-zinc-900 dark:text-zinc-100">{res.name}</span>
-                      <span className="text-zinc-500">Stock: {res.quantity} {res.unit}</span>
-                    </div>
-                    <Button size="xs" variant="outline" onClick={() => setSelectedResource(res)}>
-                      Reabastecer
-                    </Button>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Restock Modal */}
-      {selectedResource && (
-        <ResourceRestockModal
-          resource={selectedResource}
-          onClose={() => setSelectedResource(null)}
-        />
-      )}
+                    Ver Detalle →
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
     </div>
   );
 };
