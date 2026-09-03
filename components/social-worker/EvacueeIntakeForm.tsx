@@ -2,17 +2,17 @@
 
 import React, { useState } from 'react';
 import { useShelter } from '@/context/ShelterContext';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { EvacuationReason, Gender } from '@/types/shelter';
-import { UserPlus, HeartPulse, ShieldAlert, Home, Users, CheckCircle2 } from 'lucide-react';
+import { UserPlus, HeartPulse, ShieldAlert, Home, Users, CheckCircle2, Building2 } from 'lucide-react';
 
 export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onSuccessTab }) => {
-  const { zones, addEvacuee } = useShelter();
+  const { shelters, zones, addEvacuee } = useShelter();
 
   // Form State
+  const [shelterId, setShelterId] = useState<string>(shelters[0]?.id || 'ref_1');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dni, setDni] = useState('');
@@ -23,7 +23,10 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
   const [evacuationReason, setEvacuationReason] = useState<EvacuationReason>('inundacion');
   const [familyGroupId, setFamilyGroupId] = useState('');
   const [familyRole, setFamilyRole] = useState<'jefe_hogar' | 'pareja' | 'hijo' | 'familiar' | 'individual'>('jefe_hogar');
-  const [zoneId, setZoneId] = useState<string>(zones[0]?.id || 'zona_a');
+
+  // Zones available for selected shelter
+  const availableZones = zones.filter((z) => z.shelterId === shelterId);
+  const [zoneId, setZoneId] = useState<string>(availableZones[0]?.id || zones[0]?.id || 'zona_a_ref1');
   const [bedNumber, setBedNumber] = useState('');
 
   // Vulnerability Flags
@@ -37,7 +40,6 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
   const [dietaryNotes, setDietaryNotes] = useState('');
   const [registeredBy, setRegisteredBy] = useState('Lic. Comunicador Social');
 
-  // Auto detect minor or elderly based on age
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
     if (!isNaN(val)) {
@@ -57,6 +59,14 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
     }
   };
 
+  const handleShelterChange = (newShelterId: string) => {
+    setShelterId(newShelterId);
+    const newZones = zones.filter((z) => z.shelterId === newShelterId);
+    if (newZones.length > 0) {
+      setZoneId(newZones[0].id);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -66,6 +76,7 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
     }
 
     addEvacuee({
+      shelterId,
       firstName,
       lastName,
       dni,
@@ -121,12 +132,30 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
           <CardTitle className="text-xl">Formulario de Recepción e Ingreso de Evacuaos</CardTitle>
         </div>
         <CardDescription>
-          Registro ágil en puerta/admisión. Los datos ingresados alimentan inmediatamente los indicadores de capacidad del refugio.
+          Registro de admisión. Todo evacuado registrado actualiza en tiempo real la capacidad del refugio y las estadísticas del Administrador.
         </CardDescription>
       </CardHeader>
 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* SECCION 0: Selección de Refugio de Destino */}
+          <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 space-y-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-200 flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-blue-600" /> Seleccionar Refugio de Destino para este Ingreso *
+            </label>
+            <select
+              value={shelterId}
+              onChange={(e) => handleShelterChange(e.target.value)}
+              className="h-10 w-full rounded-xl border border-blue-300 bg-white px-3 py-1 text-sm font-bold text-blue-900 shadow-xs dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-100"
+            >
+              {shelters.map((s) => (
+                <option key={s.id} value={s.id}>
+                  🏢 {s.name} — ({s.occupied} / {s.capacity} camas ocupadas)
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* SECCION 1: Datos Personales */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-2 border-b pb-1">
@@ -335,13 +364,13 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
             </div>
           </div>
 
-          {/* SECCION 4: Asignación de Refugio y Grupo Familiar */}
+          {/* SECCION 4: Asignación de Refugio y Cama */}
           <div className="space-y-4 pt-2">
             <h3 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-2 border-b pb-1">
               <ShieldAlert className="h-4 w-4" /> 4. Asignación de Zona y Grupo Familiar
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                   Zona de Alojamiento Asignada *
@@ -351,9 +380,9 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
                   onChange={(e) => setZoneId(e.target.value)}
                   className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
                 >
-                  {zones.map((z) => (
+                  {availableZones.map((z) => (
                     <option key={z.id} value={z.id}>
-                      {z.name} ({z.capacity - z.occupied} libres)
+                      {z.name} ({z.capacity - z.occupied} camas libres)
                     </option>
                   ))}
                 </select>
@@ -379,23 +408,6 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
                   value={familyGroupId}
                   onChange={(e) => setFamilyGroupId(e.target.value)}
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Rol en la Familia
-                </label>
-                <select
-                  value={familyRole}
-                  onChange={(e) => setFamilyRole(e.target.value as any)}
-                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
-                >
-                  <option value="jefe_hogar">Jefe / Tutor de Hogar</option>
-                  <option value="pareja">Pareja / Cónyuge</option>
-                  <option value="hijo">Hijo / Menor a Cargo</option>
-                  <option value="familiar">Familiar Directo</option>
-                  <option value="individual">Ingreso Individual</option>
-                </select>
               </div>
             </div>
           </div>
