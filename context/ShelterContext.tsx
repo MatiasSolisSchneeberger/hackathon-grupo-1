@@ -31,9 +31,13 @@ interface ShelterContextType {
   personas: Persona[];
   gruposFamiliares: GrupoFamiliar[];
   estadias: Estadia[];
+  cargando: boolean;
+  errorCarga: string | null;
 
   // Mutators strictly matching DB schema
   addRefugio: (data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => Promise<void>;
+  updateRefugio: (id: number, data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => Promise<void>;
+  deleteRefugio: (id: number) => Promise<void>;
   addPersonaConEstadia: (
     personaData: Omit<Persona, 'id' | 'creado_en' | 'actualizado_en'>,
     estadiaData: Omit<Estadia, 'id' | 'persona_id' | 'fecha_ingreso' | 'creado_en' | 'actualizado_en'>,
@@ -76,12 +80,14 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
   const [activeAdminScreen, setActiveAdminScreen] = useState<AdminScreenType>('dashboard');
   const [activeSocialScreen, setActiveSocialScreen] = useState<SocialScreenType>('ingreso');
 
-  const [perfiles] = useState<Perfil[]>(initialPerfiles);
-  const [refugios, setRefugios] = useState<Refugio[]>(initialRefugios);
-  const [asignaciones] = useState<Asignacion[]>(initialAsignaciones);
-  const [personas, setPersonas] = useState<Persona[]>(initialPersonas);
-  const [gruposFamiliares, setGruposFamiliares] = useState<GrupoFamiliar[]>(initialGruposFamiliares);
-  const [estadias, setEstadias] = useState<Estadia[]>(initialEstadias);
+  const [perfiles, setPerfiles] = useState<Perfil[]>([]);
+  const [refugios, setRefugios] = useState<Refugio[]>([]);
+  const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
+  const [personas, setPersonas] = useState<Persona[]>([]);
+  const [gruposFamiliares, setGruposFamiliares] = useState<GrupoFamiliar[]>([]);
+  const [estadias, setEstadias] = useState<Estadia[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -120,7 +126,8 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
   }, []);
 
   useEffect(() => {
-    refrescar();
+    const timer = setTimeout(() => void refrescar(), 0);
+    return () => clearTimeout(timer);
   }, [refrescar]);
 
   useEffect(() => {
@@ -131,39 +138,6 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    Promise.all([
-      getJson<Perfil[]>('/api/perfiles'),
-      getJson<Refugio[]>('/api/refugios'),
-      getJson<Asignacion[]>('/api/asignaciones'),
-      getJson<Persona[]>('/api/personas'),
-      getJson<GrupoFamiliar[]>('/api/grupos-familiares'),
-      getJson<Estadia[]>('/api/estadias'),
-    ])
-      .then(([loadedPerfiles, loadedRefugios, loadedAsignaciones, loadedPersonas, loadedGrupos, loadedEstadias]) => {
-        if (cancelled) return;
-        setPerfiles(loadedPerfiles);
-        setRefugios(loadedRefugios);
-        setAsignaciones(loadedAsignaciones);
-        setPersonas(loadedPersonas);
-        setGruposFamiliares(loadedGrupos);
-        setEstadias(loadedEstadias);
-        setErrorCarga(null);
-      })
-      .catch((error) => {
-        if (!cancelled) setErrorCarga(error instanceof Error ? error.message : 'No se pudieron cargar los datos.');
-      })
-      .finally(() => {
-        if (!cancelled) setCargando(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Crear Refugio (Tabla public.refugios)
   const addRefugio = async (data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => {
@@ -276,8 +250,12 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
         personas,
         gruposFamiliares,
         estadias,
+        cargando,
+        errorCarga,
 
         addRefugio,
+        updateRefugio,
+        deleteRefugio,
         addPersonaConEstadia,
         registrarEgreso,
         addGrupoFamiliar,
