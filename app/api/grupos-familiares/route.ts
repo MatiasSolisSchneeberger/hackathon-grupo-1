@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
-import { badRequest, getActiveAuthenticatedUser, getAuthenticatedUser, isActiveUser, unauthorized } from '@/lib/api-auth';
+import { badRequest, forbidden, getAuthenticatedUser, isActiveUser, unauthorized } from '@/lib/api-auth';
 
 export async function GET() {
-  const { supabase, response } = await getActiveAuthenticatedUser();
-  if (response) return response;
+  const { supabase, user, profile } = await getAuthenticatedUser();
+  if (!user || !profile) return unauthorized();
+  if (!isActiveUser(profile)) return forbidden();
 
-  const { data, error } = await supabase.from('grupos_familiares').select('*').order('fecha_alta', { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  const { data, error } = await supabase
+    .from('grupos_familiares')
+    .select('*')
+    .order('creado_en', { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data ?? []);
 }
 

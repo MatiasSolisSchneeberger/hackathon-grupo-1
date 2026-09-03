@@ -74,6 +74,7 @@ export const ShelterManagementScreen: React.FC = () => {
   };
 
   const toggleRefugio = async (refugio: typeof refugios[number]) => {
+    if (refugio.activo && !confirm(`¿Desactivar el refugio "${refugio.nombre}"?`)) return;
     try {
       if (refugio.activo) {
         await deleteRefugio(refugio.id);
@@ -331,7 +332,7 @@ export const ShelterManagementScreen: React.FC = () => {
                 <Button type="button" variant="outline" onClick={closeModal}>
                   Cancelar
                 </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
                   {editingRefugioId === null ? 'Guardar en Base de Datos' : 'Actualizar Refugio'}
                 </Button>
               </div>

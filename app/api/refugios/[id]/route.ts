@@ -1,21 +1,21 @@
 import { NextResponse } from 'next/server';
 import { badRequest, forbidden, getAuthenticatedUser, isActiveUser, unauthorized } from '@/lib/api-auth';
 
-type RouteContext = { params: Promise<{ id: string }> };
-
-async function getId(context: RouteContext) {
-  const { id } = await context.params;
-  const value = Number(id);
-  return Number.isInteger(value) && value > 0 ? value : null;
+interface RouteContext {
+  params: Promise<{ id: string }>;
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
   const { supabase, user, profile } = await getAuthenticatedUser();
   if (!user || !profile) return unauthorized();
-  if (!isActiveUser(profile) || profile.rol !== 'admin') return forbidden();
+  if (!isActiveUser(profile)) return forbidden();
+  if (profile.rol !== 'admin') return forbidden();
 
-  const id = await getId(context);
-  if (!id) return badRequest('El identificador del refugio no es válido.');
+  const { id: rawId } = await context.params;
+  const id = Number(rawId);
+  if (!Number.isInteger(id) || id < 1) {
+    return badRequest('El ID del refugio no es válido.');
+  }
 
   let body: Record<string, unknown>;
   try {
@@ -24,32 +24,67 @@ export async function PATCH(request: Request, context: RouteContext) {
     return badRequest('El cuerpo de la solicitud no es JSON válido.');
   }
 
-  const nombre = typeof body.nombre === 'string' ? body.nombre.trim() : '';
-  const direccion = typeof body.direccion === 'string' ? body.direccion.trim() : '';
-  const localidad = typeof body.localidad === 'string' && body.localidad.trim() ? body.localidad.trim() : 'Corrientes';
-  const capacidad = Number(body.capacidad);
-  const activo = typeof body.activo === 'boolean' ? body.activo : undefined;
-  if (nombre.length < 3 || nombre.length > 120) return badRequest('El nombre debe tener entre 3 y 120 caracteres.');
-  if (!direccion) return badRequest('La dirección es obligatoria.');
-  if (!Number.isInteger(capacidad) || capacidad < 1 || capacidad > 10000) return badRequest('La capacidad debe estar entre 1 y 10.000.');
-
-  const { count } = await supabase.from('estadias').select('id', { count: 'exact', head: true }).eq('refugio_id', id).is('fecha_egreso', null);
-  if ((count ?? 0) > capacidad) return badRequest('La capacidad no puede ser menor que la ocupación actual.');
-  if (activo === false && (count ?? 0) > 0) return badRequest('No se puede desactivar un refugio con estadías activas.');
-
-  const { data, error } = await supabase.from('refugios').update({
-    nombre,
-    direccion,
-    localidad,
-    capacidad,
-    telefono: typeof body.telefono === 'string' ? body.telefono.trim() || null : null,
-    referente: typeof body.referente === 'string' ? body.referente.trim() || null : null,
-    observaciones: typeof body.observaciones === 'string' ? body.observaciones.trim() || null : null,
-    latitud: body.latitud === '' || body.latitud == null ? null : Number(body.latitud),
-    longitud: body.longitud === '' || body.longitud == null ? null : Number(body.longitud),
-    ...(activo === undefined ? {} : { activo }),
+  const updateData: Record<string, unknown> = {
     actualizado_en: new Date().toISOString(),
-  }).eq('id', id).select().single();
+  };
+
+  if ('nombre' in body) {
+    const nombre = typeof body.nombre === 'string' ? body.nombre.trim() : '';
+    if (nombre.length < 3 || nombre.length > 120) {
+      return badRequest('El nombre debe tener entre 3 y 120 caracteres.');
+    }
+    updateData.nombre = nombre;
+  }
+
+  if ('direccion' in body) {
+    const direccion = typeof body.direccion === 'string' ? body.direccion.trim() : '';
+    if (!direccion) return badRequest('La dirección no puede estar vacía.');
+    updateData.direccion = direccion;
+  }
+
+  if ('localidad' in body) {
+    const localidad = typeof body.localidad === 'string' ? body.localidad.trim() : '';
+    updateData.localidad = localidad || 'Corrientes';
+  }
+
+  if ('capacidad' in body) {
+    const capacidad = Number(body.capacidad);
+    if (!Number.isInteger(capacidad) || capacidad < 1 || capacidad > 10000) {
+      return badRequest('La capacidad debe estar entre 1 y 10.000.');
+    }
+    updateData.capacidad = capacidad;
+  }
+
+  if ('telefono' in body) {
+    updateData.telefono = typeof body.telefono === 'string' ? body.telefono.trim() || null : null;
+  }
+
+  if ('referente' in body) {
+    updateData.referente = typeof body.referente === 'string' ? body.referente.trim() || null : null;
+  }
+
+  if ('observaciones' in body) {
+    updateData.observaciones = typeof body.observaciones === 'string' ? body.observaciones.trim() || null : null;
+  }
+
+  if ('latitud' in body) {
+    updateData.latitud = body.latitud === '' || body.latitud == null ? null : Number(body.latitud);
+  }
+
+  if ('longitud' in body) {
+    updateData.longitud = body.longitud === '' || body.longitud == null ? null : Number(body.longitud);
+  }
+
+  if ('activo' in body) {
+    updateData.activo = Boolean(body.activo);
+  }
+
+  const { data, error } = await supabase
+    .from('refugios')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json(data);
@@ -58,15 +93,25 @@ export async function PATCH(request: Request, context: RouteContext) {
 export async function DELETE(_request: Request, context: RouteContext) {
   const { supabase, user, profile } = await getAuthenticatedUser();
   if (!user || !profile) return unauthorized();
-  if (!isActiveUser(profile) || profile.rol !== 'admin') return forbidden();
+  if (!isActiveUser(profile)) return forbidden();
+  if (profile.rol !== 'admin') return forbidden();
 
-  const id = await getId(context);
-  if (!id) return badRequest('El identificador del refugio no es válido.');
+  const { id: rawId } = await context.params;
+  const id = Number(rawId);
+  if (!Number.isInteger(id) || id < 1) {
+    return badRequest('El ID del refugio no es válido.');
+  }
 
-  const { count } = await supabase.from('estadias').select('id', { count: 'exact', head: true }).eq('refugio_id', id).is('fecha_egreso', null);
-  if ((count ?? 0) > 0) return badRequest('No se puede desactivar un refugio con estadías activas.');
+  const { data, error } = await supabase
+    .from('refugios')
+    .update({
+      activo: false,
+      actualizado_en: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
 
-  const { data, error } = await supabase.from('refugios').update({ activo: false, actualizado_en: new Date().toISOString() }).eq('id', id).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json(data);
 }

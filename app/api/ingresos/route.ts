@@ -56,61 +56,82 @@ export async function POST(request: Request) {
   if ((count || 0) >= refugio.capacidad) return badRequest('El refugio no tiene plazas disponibles.');
 
   const dni = typeof persona.numero_documento === 'string' ? persona.numero_documento.trim() : '';
-  let existingPersonaId: string | null = null;
+  let savedPersona: Record<string, unknown> | null = null;
+  let isNewPersona = false;
+
   if (dni) {
     const dniNorm = dni.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    const { data: duplicate } = await supabase
+    const { data: existingPersona, error: searchError } = await supabase
       .from('personas')
-      .select('id')
+      .select('*')
       .eq('tipo_documento', persona.tipo_documento)
       .eq('numero_documento_norm', dniNorm)
       .maybeSingle();
-    if (duplicate) {
-      existingPersonaId = duplicate.id;
-      const { data: activeStay } = await supabase
+
+    if (searchError) {
+      return NextResponse.json({ error: searchError.message }, { status: 400 });
+    }
+
+    if (existingPersona) {
+      const { data: activeEstadia } = await supabase
         .from('estadias')
         .select('id')
-        .eq('persona_id', existingPersonaId)
+        .eq('persona_id', existingPersona.id)
         .is('fecha_egreso', null)
         .maybeSingle();
-      if (activeStay) return badRequest('La persona ya tiene una estadía activa.');
+
+      if (activeEstadia) {
+        return badRequest('Esa persona ya está albergada en un refugio.');
+      }
+
+      savedPersona = existingPersona;
+      isNewPersona = false;
     }
   }
 
-  const personaPayload = {
-    tipo_documento: persona.tipo_documento,
-    numero_documento: dni || null,
-    apellido: String(persona.apellido).trim(),
-    nombre: String(persona.nombre).trim(),
-    fecha_nacimiento: typeof persona.fecha_nacimiento === 'string' ? persona.fecha_nacimiento : null,
-    genero: persona.genero,
-    telefono: typeof persona.telefono === 'string' ? persona.telefono.trim() || null : null,
-    observaciones: typeof persona.observaciones === 'string' ? persona.observaciones.trim() || null : null,
-  };
+  if (!savedPersona) {
+    const { data, error: personaError } = await supabase.from('personas').insert({
+      tipo_documento: persona.tipo_documento,
+      numero_documento: dni || null,
+      apellido: String(persona.apellido).trim(),
+      nombre: String(persona.nombre).trim(),
+      fecha_nacimiento: typeof persona.fecha_nacimiento === 'string' && persona.fecha_nacimiento ? persona.fecha_nacimiento : null,
+      genero: persona.genero,
+      telefono: typeof persona.telefono === 'string' ? persona.telefono.trim() || null : null,
+      observaciones: typeof persona.observaciones === 'string' ? persona.observaciones.trim() || null : null,
+      creado_por: user.id,
+    }).select().single();
 
-  const personaQuery = existingPersonaId
-    ? supabase.from('personas').update({ ...personaPayload, actualizado_en: new Date().toISOString() }).eq('id', existingPersonaId).select().single()
-    : supabase.from('personas').insert({ ...personaPayload, creado_por: user.id }).select().single();
-  const { data: savedPersona, error: personaError } = await personaQuery;
-  if (personaError) return NextResponse.json({ error: personaError.message }, { status: 400 });
+    if (personaError) return NextResponse.json({ error: personaError.message }, { status: 400 });
+    savedPersona = data;
+    isNewPersona = true;
+  }
+
+  if (!savedPersona) {
+    return NextResponse.json({ error: 'No se pudo determinar la persona a registrar.' }, { status: 500 });
+  }
 
   let grupoId = estadia.grupo_id ? Number(estadia.grupo_id) : null;
+  let isNewGrupo = false;
   const nuevoGrupo = body.nuevo_grupo as Record<string, unknown> | undefined;
   if (nuevoGrupo) {
     const { data: grupo, error: grupoError } = await supabase.from('grupos_familiares').insert({
       refugio_id: refugioId,
       codigo: String(nuevoGrupo.codigo || '').trim().toUpperCase(),
-      apellido_referencia: String(nuevoGrupo.apellido_referencia || persona.apellido).trim(),
+      apellido_referencia: String(nuevoGrupo.apellido_referencia || savedPersona.apellido).trim(),
       domicilio_origen: typeof nuevoGrupo.domicilio_origen === 'string' ? nuevoGrupo.domicilio_origen.trim() || null : null,
       observaciones: typeof nuevoGrupo.observaciones === 'string' ? nuevoGrupo.observaciones.trim() || null : null,
       responsable_persona_id: estadia.vinculo === 'responsable' ? savedPersona.id : null,
       creado_por: user.id,
     }).select().single();
     if (grupoError) {
-      if (!existingPersonaId) await supabase.from('personas').delete().eq('id', savedPersona.id);
+      if (isNewPersona) {
+        await supabase.from('personas').delete().eq('id', savedPersona.id);
+      }
       return NextResponse.json({ error: grupoError.message }, { status: 400 });
     }
     grupoId = grupo.id;
+    isNewGrupo = true;
   }
 
   const { data: savedEstadia, error: estadiaError } = await supabase.from('estadias').insert({
@@ -122,8 +143,12 @@ export async function POST(request: Request) {
     registrado_por: user.id,
   }).select().single();
   if (estadiaError) {
-    if (grupoId && nuevoGrupo) await supabase.from('grupos_familiares').delete().eq('id', grupoId);
-    if (!existingPersonaId) await supabase.from('personas').delete().eq('id', savedPersona.id);
+    if (isNewGrupo && grupoId) {
+      await supabase.from('grupos_familiares').delete().eq('id', grupoId);
+    }
+    if (isNewPersona) {
+      await supabase.from('personas').delete().eq('id', savedPersona.id);
+    }
     return NextResponse.json({ error: estadiaError.message }, { status: 400 });
   }
 

@@ -17,7 +17,6 @@ import {
 interface ShelterContextType {
   currentUser: UserProfile;
   currentRole: UserRole;
-  setCurrentRole: (role: UserRole) => void;
 
   activeAdminScreen: AdminScreenType;
   setActiveAdminScreen: (screen: AdminScreenType) => void;
@@ -45,6 +44,9 @@ interface ShelterContextType {
   ) => Promise<void>;
   registrarEgreso: (estadiaId: number, motivoEgreso: string, observacionesEgreso?: string) => Promise<void>;
   addGrupoFamiliar: (data: Omit<GrupoFamiliar, 'id' | 'fecha_alta' | 'creado_en' | 'actualizado_en'>) => Promise<void>;
+  updatePerfil: (id: string, data: Partial<Pick<Perfil, 'rol' | 'activo'>>) => Promise<void>;
+  addAsignacion: (usuarioId: string, refugioId: number) => Promise<void>;
+  removeAsignacion: (usuarioId: string, refugioId: number) => Promise<void>;
 
   toastMessage: string | null;
   setToastMessage: (msg: string | null) => void;
@@ -70,12 +72,30 @@ async function postJson<T>(url: string, payload: unknown): Promise<T> {
   return result as T;
 }
 
+async function patchJson<T>(url: string, payload: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'No se pudo actualizar la información.');
+  return result as T;
+}
+
+async function deleteJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { method: 'DELETE' });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || 'No se pudo eliminar la información.');
+  return result as T;
+}
+
 export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser: UserProfile }> = ({
   children,
   initialUser,
 }) => {
   const [currentUser] = useState<UserProfile>(initialUser);
-  const [currentRole, setCurrentRole] = useState<UserRole>(initialUser.role);
+  const currentRole: UserRole = currentUser.role;
 
   const [activeAdminScreen, setActiveAdminScreen] = useState<AdminScreenType>('dashboard');
   const [activeSocialScreen, setActiveSocialScreen] = useState<SocialScreenType>('ingreso');
@@ -202,15 +222,7 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
 
   const updateRefugio = async (id: number, data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => {
     try {
-      const updated = await fetch(`/api/refugios/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }).then(async (response) => {
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.error || 'No se pudo actualizar el refugio.');
-        return result as Refugio;
-      });
+      const updated = await patchJson<Refugio>(`/api/refugios/${id}`, data);
       setRefugios((prev) => prev.map((refugio) => refugio.id === id ? updated : refugio));
       setToastMessage(`Refugio "${updated.nombre}" actualizado.`);
     } catch (error) {
@@ -221,14 +233,47 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
 
   const deleteRefugio = async (id: number) => {
     try {
-      const response = await fetch(`/api/refugios/${id}`, { method: 'DELETE' });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || 'No se pudo desactivar el refugio.');
-      const updated = result as Refugio;
+      const updated = await deleteJson<Refugio>(`/api/refugios/${id}`);
       setRefugios((prev) => prev.map((refugio) => refugio.id === id ? updated : refugio));
       setToastMessage('Refugio desactivado correctamente.');
     } catch (error) {
       setToastMessage(error instanceof Error ? error.message : 'No se pudo desactivar el refugio.');
+      throw error;
+    }
+  };
+
+  // Actualizar rol/estado de un perfil (PATCH /api/perfiles/[id], solo admin)
+  const updatePerfil = async (id: string, data: Partial<Pick<Perfil, 'rol' | 'activo'>>) => {
+    try {
+      await patchJson<Perfil>(`/api/perfiles/${id}`, data);
+      await refrescar();
+      setToastMessage('Perfil actualizado exitosamente.');
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'No se pudo actualizar el perfil.');
+      throw error;
+    }
+  };
+
+  // Asignar un trabajador social a un refugio (Tabla public.asignaciones)
+  const addAsignacion = async (usuarioId: string, refugioId: number) => {
+    try {
+      await postJson<Asignacion>('/api/asignaciones', { usuario_id: usuarioId, refugio_id: refugioId });
+      await refrescar();
+      setToastMessage('Asignación creada exitosamente.');
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'No se pudo crear la asignación.');
+      throw error;
+    }
+  };
+
+  // Quitar una asignación (DELETE /api/asignaciones?usuario_id=&refugio_id=)
+  const removeAsignacion = async (usuarioId: string, refugioId: number) => {
+    try {
+      await deleteJson<{ ok: true }>(`/api/asignaciones?usuario_id=${encodeURIComponent(usuarioId)}&refugio_id=${refugioId}`);
+      await refrescar();
+      setToastMessage('Asignación eliminada.');
+    } catch (error) {
+      setToastMessage(error instanceof Error ? error.message : 'No se pudo eliminar la asignación.');
       throw error;
     }
   };
@@ -238,7 +283,6 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
       value={{
         currentUser,
         currentRole,
-        setCurrentRole,
 
         activeAdminScreen,
         setActiveAdminScreen,
@@ -260,6 +304,9 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
         addPersonaConEstadia,
         registrarEgreso,
         addGrupoFamiliar,
+        updatePerfil,
+        addAsignacion,
+        removeAsignacion,
 
         toastMessage,
         setToastMessage,

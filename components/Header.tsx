@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Users, Building2, LogOut, User } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { currentUser, currentRole, setCurrentRole, refugios, estadias, toastMessage } = useShelter();
+  const { currentUser, currentRole, refugios, estadias, toastMessage } = useShelter();
 
   const totalCapacity = refugios.reduce((acc, r) => acc + r.capacidad, 0);
   const totalOccupied = estadias.filter((e) => !e.fecha_egreso).length;
@@ -83,30 +83,6 @@ export const Header: React.FC = () => {
                   </Badge>
                 </div>
               </div>
-
-              {/* Quick Role Switcher for MVP Testing (Admin only) */}
-              {currentUser.role === 'admin' && (
-                <div className="hidden xl:flex items-center gap-1 border-l border-zinc-200 dark:border-zinc-800 pl-2">
-                  <button
-                    onClick={() => setCurrentRole('admin')}
-                    className={`p-1 px-2 rounded text-[11px] font-bold ${
-                      currentRole === 'admin' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-800'
-                    }`}
-                    title="[PREVISUALIZACIÓN] Cambiar a Vista Admin"
-                  >
-                    Admin
-                  </button>
-                  <button
-                    onClick={() => setCurrentRole('social_worker')}
-                    className={`p-1 px-2 rounded text-[11px] font-bold ${
-                      currentRole === 'social_worker' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-800'
-                    }`}
-                    title="[PREVISUALIZACIÓN] Cambiar a Vista Trabajador"
-                  >
-                    Trabajador
-                  </button>
-                </div>
-              )}
 
               <form action={cerrarSesion} className="contents">
                 <Button

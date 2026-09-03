@@ -60,6 +60,13 @@ export const RegisterForm: React.FC = () => {
             </div>
           )}
 
+          {state.message && (
+            <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex gap-2 items-start">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>{state.message}</span>
+            </div>
+          )}
+
           <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-semibold flex gap-2 items-start">
             <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
             <span>Tu cuenta se crea como Trabajador Social. Un administrador puede cambiar tu rol.</span>

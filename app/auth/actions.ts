@@ -5,9 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 export const registrarse = async (
-  prevState: { error?: string },
+  prevState: { error?: string; message?: string },
   formData: FormData
-): Promise<{ error?: string }> => {
+): Promise<{ error?: string; message?: string }> => {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const nombre_completo = formData.get('nombre_completo') as string;
@@ -36,14 +36,12 @@ export const registrarse = async (
     return { error: error.message };
   }
 
-  if (data.user) {
-    const { error: profileError } = await supabase.from('perfiles').upsert({
-      id: data.user.id,
-      nombre_completo,
-      rol: 'trabajador_social',
-      activo: true,
-    });
-    if (profileError) return { error: `Cuenta creada, pero no se pudo crear el perfil: ${profileError.message}` };
+  // El perfil (public.perfiles) lo crea un trigger en auth.users, no este
+  // action. Eso evita el caso donde la confirmación de email está activada:
+  // acá todavía no hay sesión, así que un insert desde el cliente fallaría
+  // por RLS.
+  if (!data.session) {
+    return { message: 'Cuenta creada. Revisá tu correo para confirmar la cuenta antes de iniciar sesión.' };
   }
 
   revalidatePath('/', 'layout');
