@@ -12,12 +12,12 @@ function MainContent() {
   const { currentRole } = useShelter();
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
+    <div className="flex-1 flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] min-w-0">
       {/* Sidebar Navigation */}
       <Sidebar />
 
       {/* Main Workspace Area */}
-      <main className="flex-1 p-4 lg:p-6 max-w-7xl overflow-x-hidden">
+      <main className="min-w-0 w-full flex-1 overflow-x-hidden p-4 lg:p-6">
         {currentRole === 'admin' ? (
           <AdminDashboard />
         ) : (

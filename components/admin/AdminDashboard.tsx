@@ -54,13 +54,13 @@ export const AdminDashboard: React.FC = () => {
 
   // DEFAULT DASHBOARD GLOBAL
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-900 text-white p-6 rounded-2xl shadow-md border border-zinc-800">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-start gap-2">
             <Shield className="h-6 w-6 text-blue-400" />
-            <h2 className="text-2xl font-bold tracking-tight">Panel General del Administrador</h2>
+            <h2 className="min-w-0 text-xl font-bold tracking-tight sm:text-2xl">Panel General del Administrador</h2>
           </div>
           <p className="text-sm text-zinc-400 mt-1">
             Supervisión consolidada basada exactamente en las tablas public.refugios, personas, estadias, grupos_familiares y perfiles.
@@ -152,7 +152,7 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Refugios Summary List */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="text-lg">Refugios Activos (public.refugios)</CardTitle>
             <CardDescription>Ocupación en tiempo real por cada establecimiento.</CardDescription>
@@ -165,7 +165,7 @@ export const AdminDashboard: React.FC = () => {
             Administrar Refugios →
           </Button>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardContent className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-3">
           {refugios.map((r) => {
             const ocupadas = estadias.filter((e) => e.refugio_id === r.id && !e.fecha_egreso).length;
             const pct = Math.round((ocupadas / r.capacidad) * 100);
@@ -175,8 +175,8 @@ export const AdminDashboard: React.FC = () => {
                 key={r.id}
                 className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 space-y-2"
               >
-                <div className="flex justify-between items-start">
-                  <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{r.nombre}</span>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="min-w-0 break-words font-bold text-sm text-zinc-900 dark:text-zinc-100">{r.nombre}</span>
                   <Badge variant={pct >= 90 ? 'destructive' : pct >= 75 ? 'warning' : 'secondary'}>
                     {ocupadas}/{r.capacidad}
                   </Badge>
