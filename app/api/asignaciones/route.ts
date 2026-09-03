@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
-import { badRequest, forbidden, getAuthenticatedUser, isActiveUser, unauthorized } from '@/lib/api-auth';
+import { badRequest, forbidden, getActiveAuthenticatedUser, getAuthenticatedUser, isActiveUser, unauthorized } from '@/lib/api-auth';
+
+export async function GET() {
+  const { supabase, response } = await getActiveAuthenticatedUser();
+  if (response) return response;
+
+  const { data, error } = await supabase.from('asignaciones').select('*').order('refugio_id');
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json(data ?? []);
+}
 
 export async function POST(request: Request) {
   const { supabase, user, profile } = await getAuthenticatedUser();

@@ -40,13 +40,13 @@ export const RegisterForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-10 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-black py-10 px-4">
       <Card className="w-full max-w-md border-t-4 border-t-blue-600 shadow-xl bg-white dark:bg-zinc-900">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold text-2xl shadow-lg mb-2">
             <Building2 className="h-8 w-8" />
           </div>
-          <CardTitle className="text-2xl font-extrabold tracking-tight">Crear Cuenta en RefugIA</CardTitle>
+          <CardTitle className="text-2xl font-extrabold tracking-tight">Crear Cuenta en IRUPE</CardTitle>
           <CardDescription>
             Alta de Perfil (public.perfiles) para Operadores del Sistema
           </CardDescription>

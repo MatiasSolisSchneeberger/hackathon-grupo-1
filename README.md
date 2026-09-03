@@ -1,4 +1,4 @@
-# 🏥 RefugIA - Sistema de Gestión de Refugios de Emergencia (MVP)
+# 🏥 IRUPE - Sistema de Gestión de Refugios de Emergencia (MVP)
 
 Sistema de gestión gráfica e interactiva para refugios de evacuados desarrollado en **Next.js 16 (App Router)**, **Tailwind CSS v4** y componentes **Shadcn UI**.
 

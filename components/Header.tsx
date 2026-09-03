@@ -32,7 +32,7 @@ export const Header: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                RefugIA <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">Sistema de Refugios</span>
+                IRUPE <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">Sistema de Refugios</span>
               </h1>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">

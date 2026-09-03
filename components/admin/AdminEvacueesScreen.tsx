@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Building2, FileSpreadsheet } from 'lucide-react';
 
 export const AdminEvacueesScreen: React.FC = () => {
-  const { estadias, personas, refugios, gruposFamiliares } = useShelter();
+  const { estadias, personas, refugios, gruposFamiliares, cargando, errorCarga } = useShelter();
   const [searchQuery, setSearchQuery] = useState('');
   const [refugioFilter, setRefugioFilter] = useState<string>('all');
   const [estadoFilter, setEstadoFilter] = useState<string>('activas');
@@ -32,6 +32,48 @@ export const AdminEvacueesScreen: React.FC = () => {
     return matchSearch && matchRefugio && matchEstado;
   });
 
+  const handleExport = () => {
+    const escapeCsv = (value: string | number | null | undefined) => {
+      const text = String(value ?? '').replace(/"/g, '""');
+      return `"${text}"`;
+    };
+
+    const rows = filteredEstadias.map((estadia) => {
+      const persona = personas.find((p) => p.id === estadia.persona_id);
+      const refugio = refugios.find((r) => r.id === estadia.refugio_id);
+      const grupo = gruposFamiliares.find((g) => g.id === estadia.grupo_id);
+      return [
+        `${persona?.apellido ?? ''}, ${persona?.nombre ?? ''}`,
+        persona?.tipo_documento,
+        persona?.numero_documento,
+        refugio?.nombre ?? estadia.refugio_id,
+        grupo?.codigo ?? 'Sin grupo',
+        estadia.vinculo,
+        estadia.fecha_ingreso,
+        estadia.fecha_egreso ? 'Egresada' : 'Activa',
+        persona?.observaciones ?? estadia.observaciones,
+      ].map(escapeCsv).join(',');
+    });
+
+    const header = ['Persona', 'Tipo documento', 'Numero documento', 'Refugio', 'Grupo', 'Vinculo', 'Fecha ingreso', 'Estado', 'Observaciones'];
+    const csv = [header.map(escapeCsv).join(','), ...rows].join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `padron-evacuados-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (cargando) {
+    return <Card className="p-6 text-sm text-zinc-500">Cargando padrón de estadías...</Card>;
+  }
+
+  if (errorCarga) {
+    return <Card role="alert" className="p-6 text-sm text-red-700 dark:text-red-300">{errorCarga}</Card>;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -42,7 +84,7 @@ export const AdminEvacueesScreen: React.FC = () => {
               Base de datos centralizada alimentada en tiempo real por los Trabajadores Sociales en cada refugio.
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={() => alert("Exportando padrón consolidado a CSV/Excel...")}>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={cargando || filteredEstadias.length === 0}>
             <FileSpreadsheet className="h-4 w-4 mr-1.5 text-emerald-600" />
             Exportar Padrón Global
           </Button>
@@ -85,7 +127,7 @@ export const AdminEvacueesScreen: React.FC = () => {
         </div>
       </CardHeader>
 
-      <CardContent className="p-0 overflow-x-auto">
+      <CardContent className="overflow-x-auto p-0">
         <table className="w-full text-left text-sm">
           <thead className="bg-zinc-50 dark:bg-zinc-900 border-y border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-500 uppercase">
             <tr>

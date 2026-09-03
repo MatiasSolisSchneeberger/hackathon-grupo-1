@@ -36,7 +36,7 @@ export const AppShell: React.FC<{ initialUser: UserProfile }> = ({ initialUser }
         <MainContent />
         <footer className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 py-3 text-center text-xs text-zinc-500">
           <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span>RefugIA © 2026 - Sistema de Gestión Multi-Refugio y Asistencia Social</span>
+            <span>IRUPE © 2026 - Sistema de Gestión Multi-Refugio y Asistencia Social</span>
             <span>Desarrollado para Hackathon • MVP Multi-Pantalla Funcional</span>
           </div>
         </footer>

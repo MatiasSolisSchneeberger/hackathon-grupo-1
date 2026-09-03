@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Home, Users, MapPin } from 'lucide-react';
 
 export const GruposFamiliaresScreen: React.FC = () => {
-  const { gruposFamiliares, refugios, personas, estadias } = useShelter();
+  const { gruposFamiliares, refugios, personas, estadias, cargando, errorCarga } = useShelter();
   const [selectedRefugioFilter, setSelectedRefugioFilter] = useState<string>('all');
 
   const filteredGrupos = gruposFamiliares.filter((g) => {
@@ -48,7 +48,13 @@ export const GruposFamiliaresScreen: React.FC = () => {
 
       {/* Grid of Family Groups */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredGrupos.map((grupo) => {
+        {cargando ? (
+          <p className="text-sm text-zinc-500">Cargando grupos familiares...</p>
+        ) : errorCarga ? (
+          <p role="alert" className="text-sm text-red-700 dark:text-red-300">{errorCarga}</p>
+        ) : filteredGrupos.length === 0 ? (
+          <p className="text-sm text-zinc-500">No hay grupos familiares para mostrar.</p>
+        ) : filteredGrupos.map((grupo) => {
           const refugio = refugios.find((r) => r.id === grupo.refugio_id);
           const responsable = personas.find((p) => p.id === grupo.responsable_persona_id);
           

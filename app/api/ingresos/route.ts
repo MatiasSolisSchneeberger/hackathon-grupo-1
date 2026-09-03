@@ -56,6 +56,7 @@ export async function POST(request: Request) {
   if ((count || 0) >= refugio.capacidad) return badRequest('El refugio no tiene plazas disponibles.');
 
   const dni = typeof persona.numero_documento === 'string' ? persona.numero_documento.trim() : '';
+  let existingPersonaId: string | null = null;
   if (dni) {
     const dniNorm = dni.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
     const { data: duplicate } = await supabase
@@ -64,10 +65,19 @@ export async function POST(request: Request) {
       .eq('tipo_documento', persona.tipo_documento)
       .eq('numero_documento_norm', dniNorm)
       .maybeSingle();
-    if (duplicate) return badRequest('Ya existe una persona registrada con ese documento.');
+    if (duplicate) {
+      existingPersonaId = duplicate.id;
+      const { data: activeStay } = await supabase
+        .from('estadias')
+        .select('id')
+        .eq('persona_id', existingPersonaId)
+        .is('fecha_egreso', null)
+        .maybeSingle();
+      if (activeStay) return badRequest('La persona ya tiene una estadía activa.');
+    }
   }
 
-  const { data: savedPersona, error: personaError } = await supabase.from('personas').insert({
+  const personaPayload = {
     tipo_documento: persona.tipo_documento,
     numero_documento: dni || null,
     apellido: String(persona.apellido).trim(),
@@ -76,8 +86,12 @@ export async function POST(request: Request) {
     genero: persona.genero,
     telefono: typeof persona.telefono === 'string' ? persona.telefono.trim() || null : null,
     observaciones: typeof persona.observaciones === 'string' ? persona.observaciones.trim() || null : null,
-    creado_por: user.id,
-  }).select().single();
+  };
+
+  const personaQuery = existingPersonaId
+    ? supabase.from('personas').update({ ...personaPayload, actualizado_en: new Date().toISOString() }).eq('id', existingPersonaId).select().single()
+    : supabase.from('personas').insert({ ...personaPayload, creado_por: user.id }).select().single();
+  const { data: savedPersona, error: personaError } = await personaQuery;
   if (personaError) return NextResponse.json({ error: personaError.message }, { status: 400 });
 
   let grupoId = estadia.grupo_id ? Number(estadia.grupo_id) : null;
@@ -93,7 +107,7 @@ export async function POST(request: Request) {
       creado_por: user.id,
     }).select().single();
     if (grupoError) {
-      await supabase.from('personas').delete().eq('id', savedPersona.id);
+      if (!existingPersonaId) await supabase.from('personas').delete().eq('id', savedPersona.id);
       return NextResponse.json({ error: grupoError.message }, { status: 400 });
     }
     grupoId = grupo.id;
@@ -109,9 +123,13 @@ export async function POST(request: Request) {
   }).select().single();
   if (estadiaError) {
     if (grupoId && nuevoGrupo) await supabase.from('grupos_familiares').delete().eq('id', grupoId);
-    await supabase.from('personas').delete().eq('id', savedPersona.id);
+    if (!existingPersonaId) await supabase.from('personas').delete().eq('id', savedPersona.id);
     return NextResponse.json({ error: estadiaError.message }, { status: 400 });
   }
 
-  return NextResponse.json({ persona: savedPersona, estadia: savedEstadia }, { status: 201 });
+  const grupo = grupoId
+    ? (await supabase.from('grupos_familiares').select('*').eq('id', grupoId).maybeSingle()).data
+    : null;
+
+  return NextResponse.json({ persona: savedPersona, estadia: savedEstadia, grupo }, { status: 201 });
 }

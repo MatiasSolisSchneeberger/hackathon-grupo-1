@@ -1,0 +1,11 @@
+import { NextResponse } from 'next/server';
+import { getActiveAuthenticatedUser } from '@/lib/api-auth';
+
+export async function GET() {
+  const { supabase, response } = await getActiveAuthenticatedUser();
+  if (response) return response;
+
+  const { data, error } = await supabase.from('personas').select('*').order('apellido').order('nombre');
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json(data ?? []);
+}

@@ -9,7 +9,7 @@ import { TipoDocumento, Genero, VinculoFamiliar } from '@/types/shelter';
 import { UserPlus, Building2, Users, CheckCircle2, Home } from 'lucide-react';
 
 export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onSuccessTab }) => {
-  const { refugios, gruposFamiliares, addPersonaConEstadia } = useShelter();
+  const { refugios, gruposFamiliares, addPersonaConEstadia, cargando, errorCarga } = useShelter();
 
   // Selected Refugio for stay
   const [refugioId, setRefugioId] = useState<number>(refugios[0]?.id || 0);
@@ -41,9 +41,18 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
 
   // Filter groups for selected refugio
   const refugiosActivos = refugios.filter((refugio) => refugio.activo);
+  const selectedRefugioId = refugioId || refugiosActivos[0]?.id || 0;
   const gruposRefugio = gruposFamiliares.filter(
-    (grupo) => grupo.refugio_id === refugioId && !grupo.fecha_cierre,
+    (grupo) => grupo.refugio_id === selectedRefugioId && !grupo.fecha_cierre,
   );
+
+  if (cargando) {
+    return <Card className="p-6 text-sm text-zinc-500">Cargando refugios y datos de ingreso...</Card>;
+  }
+
+  if (errorCarga) {
+    return <Card role="alert" className="border-red-200 p-6 text-sm text-red-700 dark:border-red-900 dark:text-red-300">{errorCarga}</Card>;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +63,7 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
       return;
     }
 
-    if (!refugioId || refugiosActivos.length === 0) {
+    if (!selectedRefugioId || refugiosActivos.length === 0) {
       setFormError('Seleccioná un refugio activo antes de registrar el ingreso.');
       return;
     }
@@ -89,7 +98,7 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
           observaciones: observacionesPersona.trim() || undefined,
         },
         {
-          refugio_id: refugioId,
+          refugio_id: selectedRefugioId,
           vinculo,
           grupo_id: !crearNuevoGrupo && grupoExistenteId !== '' ? Number(grupoExistenteId) : undefined,
           observaciones: observacionesEstadia.trim() || undefined,
@@ -147,7 +156,7 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
               <Building2 className="h-4 w-4 text-blue-600" /> Refugio Asignado (public.estadias.refugio_id) *
             </label>
             <select
-              value={refugioId}
+              value={selectedRefugioId}
               onChange={(e) => setRefugioId(Number(e.target.value))}
               className="h-10 w-full rounded-xl border border-blue-300 bg-white px-3 py-1 text-sm font-bold text-blue-900 shadow-xs dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-100"
             >

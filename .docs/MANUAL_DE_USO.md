@@ -1,4 +1,4 @@
-# Manual de Uso del Sistema - RefugIA (Alineado con Esquema Supabase / PostgreSQL)
+# Manual de Uso del Sistema - IRUPE (Alineado con Esquema Supabase / PostgreSQL)
 
 ## 📌 1. Mapeo de la Base de Datos con el Frontend
 

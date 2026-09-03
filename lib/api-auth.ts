@@ -15,6 +15,19 @@ export async function getAuthenticatedUser() {
   return { supabase, user: data.user, profile };
 }
 
+export async function getActiveAuthenticatedUser() {
+  const auth = await getAuthenticatedUser();
+  if (!auth.user || !auth.profile) {
+    return { ...auth, response: unauthorized() };
+  }
+
+  if (!isActiveUser(auth.profile)) {
+    return { ...auth, response: forbidden() };
+  }
+
+  return { ...auth, response: null };
+}
+
 export function unauthorized() {
   return NextResponse.json({ error: 'Debes iniciar sesión.' }, { status: 401 });
 }
