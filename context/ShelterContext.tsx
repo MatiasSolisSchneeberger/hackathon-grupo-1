@@ -172,9 +172,10 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser:
       persona: personaData,
       estadia: estadiaData,
       nuevo_grupo: nuevoGrupo,
-    }).then(({ persona, estadia }) => {
+    }).then(async ({ persona, estadia }) => {
       setPersonas((prev) => [persona, ...prev]);
       setEstadias((prev) => [estadia, ...prev]);
+      await refrescar();
       const targetRefugio = refugios.find((r) => r.id === estadia.refugio_id);
        setToastMessage(`Persona ${persona.apellido}, ${persona.nombre} registrada con estadía en "${targetRefugio?.nombre}".`);
      }).catch((error) => {
