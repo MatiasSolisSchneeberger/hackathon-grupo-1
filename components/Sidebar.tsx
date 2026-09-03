@@ -57,7 +57,7 @@ export const Sidebar: React.FC = () => {
       {/* Mobile Toggle Button */}
       <div className="lg:hidden p-3 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
         <div className="flex items-center gap-2 font-bold text-sm">
-          {currentRole === 'administrador' ? (
+          {currentRole === 'admin' ? (
             <ShieldCheck className="h-4 w-4 text-blue-600" />
           ) : (
             <ClipboardList className="h-4 w-4 text-blue-600" />
@@ -89,7 +89,7 @@ export const Sidebar: React.FC = () => {
         {/* Header */}
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
           <div className="flex items-center gap-2">
-            {currentRole === 'administrador' ? (
+            {currentRole === 'admin' ? (
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
                 <ShieldCheck className="h-5 w-5" />
               </div>
@@ -100,10 +100,10 @@ export const Sidebar: React.FC = () => {
             )}
             <div>
               <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                {currentRole === 'administrador' ? 'Vista Administrador' : 'Trabajador Social'}
+                {currentRole === 'admin' ? 'Vista Administrador' : 'Trabajador Social'}
               </h3>
               <p className="text-[11px] text-zinc-500">
-                {currentRole === 'administrador' ? 'Control General DB' : 'Gestión de Estadías'}
+                {currentRole === 'admin' ? 'Control General DB' : 'Gestión de Estadías'}
               </p>
             </div>
           </div>
@@ -111,7 +111,7 @@ export const Sidebar: React.FC = () => {
 
         {/* Menu Links */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {currentRole === 'administrador'
+          {currentRole === 'admin'
             ? adminMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeAdminScreen === item.id;

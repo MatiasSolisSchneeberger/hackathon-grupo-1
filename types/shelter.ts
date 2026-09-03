@@ -1,11 +1,12 @@
 export type UserRole = 'admin' | 'social_worker';
 export type DbRol = 'admin' | 'trabajador_social';
 
-export interface Perfil {
+// Usuario autenticado (derivado de auth.users + public.perfiles) usado por la UI
+export interface UserProfile {
   id: string;
-  nombre_completo: string;
-  rol: DbRol;
-  activo: boolean;
+  name: string;
+  email: string;
+  role: UserRole;
 }
 
 export type TipoDocumento = 'dni' | 'pasaporte' | 'otro';
@@ -18,7 +19,7 @@ export type VinculoFamiliar = 'jefe_hogar' | 'pareja' | 'hijo' | 'familiar' | 's
 export interface Perfil {
   id: string; // uuid
   nombre_completo: string;
-  rol: RolUsuario;
+  rol: DbRol;
   activo: boolean;
   creado_en?: string;
   actualizado_en?: string;

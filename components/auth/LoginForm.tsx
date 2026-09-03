@@ -6,16 +6,11 @@ import {iniciarSesion} from "@/app/auth/actions"
 import {Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter} from "@/components/ui/card"
 import {Input} from "@/components/ui/input"
 import {Button} from "@/components/ui/button"
-import {Building2, LogIn, Mail, Lock, Sparkles} from "lucide-react"
+import {Building2, LogIn, Mail, Lock} from "lucide-react"
 
 export const LoginForm: React.FC = () => {
 	const [state, formAction, isPending] = useActionState(iniciarSesion, {})
 	const [email, setEmail] = useState("")
-	const [password, setPassword] = useState("")
-
-	const handleDemoFill = (demoEmail: string) => {
-		setEmail(demoEmail)
-	}
 
 	return (
 		<div className="min-h-[85vh] flex items-center justify-center py-10 px-4">
@@ -70,71 +65,11 @@ export const LoginForm: React.FC = () => {
 							</div>
 						</div>
 
-						<div>
-							<label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-								Perfil de Rol Requerido
-							</label>
-							<div className="grid grid-cols-2 gap-2">
-								<button
-									type="button"
-									onClick={() => setRole("admin")}
-									className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-bold transition-all ${
-										role === "admin" ?
-											"border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs"
-										:	"border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
-									}`}>
-									<Shield className="h-4 w-4" />
-									Administrador
-								</button>
-
-								<button
-									type="button"
-									onClick={() => setRole("social_worker")}
-									className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-bold transition-all ${
-										role === "social_worker" ?
-											"border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs"
-										:	"border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
-									}`}>
-									<ClipboardList className="h-4 w-4" />
-									Comunicador Social
-								</button>
-							</div>
-						</div>
-
 						<Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5">
 							<LogIn className="h-4 w-4 mr-2" />
 							{isPending ? "Iniciando sesión..." : "Iniciar Sesión"}
 						</Button>
 					</form>
-
-					{/* Quick Demo Fill Bar */}
-					<div className="pt-3 border-t border-zinc-100 dark:border-zinc-800">
-						<span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block text-center mb-2">
-							⚡ Demo Rápida (Precargar)
-						</span>
-						<div className="grid grid-cols-2 gap-2">
-							<Button
-								type="button"
-								variant="outline"
-								size="xs"
-								onClick={() => handleDemoLogin("admin")}
-								className="text-[11px] border-blue-200 text-blue-700 dark:border-blue-900 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950"
-								disabled={isPending}>
-								<Sparkles className="h-3 w-3 mr-1 text-blue-500" />
-								Cargar Admin
-							</Button>
-							<Button
-								type="button"
-								variant="outline"
-								size="xs"
-								onClick={() => handleDemoLogin("social_worker")}
-								className="text-[11px] border-emerald-200 text-emerald-700 dark:border-emerald-900 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950"
-								disabled={isPending}>
-								<Sparkles className="h-3 w-3 mr-1 text-emerald-500" />
-								Trabajador Social
-							</Button>
-						</div>
-					</div>
 				</CardContent>
 
 				<CardFooter className="flex justify-center border-t border-zinc-100 dark:border-zinc-800 py-3 text-xs">

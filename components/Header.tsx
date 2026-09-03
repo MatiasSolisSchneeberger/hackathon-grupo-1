@@ -5,10 +5,10 @@ import { useShelter } from '@/context/ShelterContext';
 import { cerrarSesion } from '@/app/auth/actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, ClipboardList, Users, Building2, LogOut, User } from 'lucide-react';
+import { Users, Building2, LogOut, User } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { currentUser, currentRole, setCurrentRole, zones, notices, toastMessage } = useShelter();
+  const { currentUser, currentRole, setCurrentRole, refugios, estadias, toastMessage } = useShelter();
 
   const totalCapacity = refugios.reduce((acc, r) => acc + r.capacidad, 0);
   const totalOccupied = estadias.filter((e) => !e.fecha_egreso).length;
@@ -72,14 +72,14 @@ export const Header: React.FC = () => {
             <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 p-1.5 px-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-xs">
-                  {currentUser.nombre_completo.substring(0, 2).toUpperCase()}
+                  {currentUser.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div className="hidden sm:block text-left">
                   <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 block line-clamp-1">
-                    {currentUser.nombre_completo}
+                    {currentUser.name}
                   </span>
                   <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
-                    {currentUser.rol === 'administrador' ? '🛡️ Administrador' : '📋 Trabajador Social'}
+                    {currentRole === 'admin' ? '🛡️ Administrador' : '📋 Trabajador Social'}
                   </Badge>
                 </div>
               </div>

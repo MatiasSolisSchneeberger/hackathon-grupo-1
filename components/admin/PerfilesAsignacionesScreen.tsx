@@ -42,8 +42,8 @@ export const PerfilesAsignacionesScreen: React.FC = () => {
                     <CardTitle className="text-base font-bold text-zinc-900 dark:text-zinc-100">{perfil.nombre_completo}</CardTitle>
                     <span className="text-xs text-zinc-500 font-mono">ID: {perfil.id}</span>
                   </div>
-                  <Badge variant={perfil.rol === 'administrador' ? 'default' : 'secondary'}>
-                    {perfil.rol === 'administrador' ? '🛡️ Administrador' : '📋 Trabajador Social'}
+                  <Badge variant={perfil.rol === 'admin' ? 'default' : 'secondary'}>
+                    {perfil.rol === 'admin' ? '🛡️ Administrador' : '📋 Trabajador Social'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -55,7 +55,7 @@ export const PerfilesAsignacionesScreen: React.FC = () => {
                     Refugios Asignados en public.asignaciones ({refugiosAsignados.length}):
                   </span>
 
-                  {perfil.rol === 'administrador' ? (
+                  {perfil.rol === 'admin' ? (
                     <span className="text-blue-600 font-semibold block">Acceso Global a Todos los Refugios</span>
                   ) : refugiosAsignados.length === 0 ? (
                     <span className="text-zinc-400 italic">Sin asignaciones registradas.</span>
