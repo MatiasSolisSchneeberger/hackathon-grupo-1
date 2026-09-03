@@ -80,7 +80,7 @@ export const Sidebar: React.FC = () => {
 
       {/* Sidebar Body */}
       <aside
-        className={`fixed lg:static top-0 left-0 z-40 h-full w-64 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col transition-transform duration-200 ${
+        className={`fixed lg:sticky lg:top-0 lg:self-start top-0 left-0 z-40 lg:z-30 h-full lg:h-screen w-64 shrink-0 overflow-y-auto bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col transition-transform duration-200 ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >

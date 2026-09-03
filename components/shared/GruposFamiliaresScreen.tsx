@@ -2,53 +2,20 @@
 
 import React, { useState } from 'react';
 import { useShelter } from '@/context/ShelterContext';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Home, Users, Building2, Plus, MapPin } from 'lucide-react';
+import { Home, Users, MapPin } from 'lucide-react';
 
 export const GruposFamiliaresScreen: React.FC = () => {
-  const { gruposFamiliares, refugios, personas, estadias, addGrupoFamiliar } = useShelter();
+  const { gruposFamiliares, refugios, personas, estadias } = useShelter();
   const [selectedRefugioFilter, setSelectedRefugioFilter] = useState<string>('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-
-  // Form State for public.grupos_familiares
-  const [refugioId, setRefugioId] = useState<number>(refugios[0]?.id || 1);
-  const [codigo, setCodigo] = useState('');
-  const [apellidoReferencia, setApellidoReferencia] = useState('');
-  const [domicilioOrigen, setDomicilioOrigen] = useState('');
-  const [observaciones, setObservaciones] = useState('');
 
   const filteredGrupos = gruposFamiliares.filter((g) => {
     return selectedRefugioFilter === 'all' || g.refugio_id === Number(selectedRefugioFilter);
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!codigo.trim() || !apellidoReferencia.trim()) {
-      alert('Código y Apellido de Referencia son obligatorios.');
-      return;
-    }
-
-    addGrupoFamiliar({
-      refugio_id: refugioId,
-      codigo: codigo.trim().toUpperCase(),
-      apellido_referencia: apellidoReferencia.trim(),
-      domicilio_origen: domicilioOrigen.trim() || undefined,
-      observaciones: observaciones.trim() || undefined,
-    });
-
-    setCodigo('');
-    setApellidoReferencia('');
-    setDomicilioOrigen('');
-    setObservaciones('');
-    setShowCreateModal(false);
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-900 text-white p-6 rounded-2xl shadow-md border border-zinc-800">
         <div>
@@ -60,13 +27,6 @@ export const GruposFamiliaresScreen: React.FC = () => {
             Gestión de núcleos familiares evacuados para mantener su unidad en el refugio.
           </p>
         </div>
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs"
-        >
-          <Plus className="h-4 w-4 mr-1.5" />
-          + Crear Grupo Familiar
-        </Button>
       </div>
 
       {/* Filter */}
@@ -150,88 +110,6 @@ export const GruposFamiliaresScreen: React.FC = () => {
         })}
       </div>
 
-      {/* Form Modal: public.grupos_familiares */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50">
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
-              <div className="flex items-center gap-2">
-                <Home className="h-5 w-5 text-purple-600" />
-                <h3 className="font-bold text-lg">Alta de Grupo Familiar</h3>
-              </div>
-              <button onClick={() => setShowCreateModal(false)} className="text-zinc-400 hover:text-zinc-600">
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-4 space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold mb-1">Refugio Asignado *</label>
-                <select
-                  value={refugioId}
-                  onChange={(e) => setRefugioId(Number(e.target.value))}
-                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-xs dark:bg-zinc-950 dark:border-zinc-700"
-                >
-                  {refugios.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold mb-1">Código de Grupo *</label>
-                <Input
-                  placeholder="Ej: GF-GOMEZ-01"
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold mb-1">Apellido de Referencia *</label>
-                <Input
-                  placeholder="Ej: Gómez"
-                  value={apellidoReferencia}
-                  onChange={(e) => setApellidoReferencia(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold mb-1">Domicilio de Origen</label>
-                <Input
-                  placeholder="Ej: Barrio La Tosquera, Mz 4"
-                  value={domicilioOrigen}
-                  onChange={(e) => setDomicilioOrigen(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold mb-1">Observaciones</label>
-                <textarea
-                  rows={2}
-                  placeholder="Notas adicionales..."
-                  value={observaciones}
-                  onChange={(e) => setObservaciones(e.target.value)}
-                  className="w-full rounded-md border border-zinc-300 p-2 text-xs dark:bg-zinc-950 dark:border-zinc-700"
-                />
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-3 border-t border-zinc-200 dark:border-zinc-800">
-                <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-bold">
-                  Crear Grupo en DB
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -32,12 +32,12 @@ export const SocialWorkerDashboard: React.FC = () => {
 
   // DEFAULT
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-blue-900 text-white p-6 rounded-2xl shadow-md border border-blue-800">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-start gap-2">
             <ClipboardList className="h-6 w-6 text-blue-300" />
-            <h2 className="text-2xl font-bold tracking-tight">Panel del Trabajador Social</h2>
+            <h2 className="min-w-0 text-xl font-bold tracking-tight sm:text-2xl">Panel del Trabajador Social</h2>
           </div>
           <p className="text-sm text-blue-200 mt-1">
             Gestión de ingresos, permanencia y egresos sobre las tablas public.personas, public.estadias y public.grupos_familiares.
