@@ -24,6 +24,7 @@ export interface Vulnerabilities {
 
 export interface Evacuee {
   id: string;
+  shelterId: string; // Refugio al que pertenece
   firstName: string;
   lastName: string;
   dni: string;
@@ -46,6 +47,7 @@ export interface Evacuee {
 
 export interface ShelterZone {
   id: string;
+  shelterId: string;
   name: string;
   code: string;
   capacity: number;
@@ -56,6 +58,7 @@ export interface ShelterZone {
 
 export interface ResourceItem {
   id: string;
+  shelterId: string; // Refugio al que pertenece este alimento/insumo
   category: 'alimentos' | 'agua' | 'abrigo' | 'higiene' | 'medicina';
   name: string;
   quantity: number;
@@ -65,6 +68,19 @@ export interface ResourceItem {
   lastRestocked: string;
 }
 
+export interface Shelter {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  managerName: string;
+  phone: string;
+  capacity: number;
+  occupied: number;
+  status: 'operativo' | 'lleno' | 'mantenimiento';
+  infrastructureType: 'polideportivo' | 'escuela' | 'centro_comunitario' | 'otro';
+}
+
 export interface NoticeAlert {
   id: string;
   title: string;
@@ -72,4 +88,20 @@ export interface NoticeAlert {
   type: 'warning' | 'info' | 'urgent';
   timestamp: string;
   author: string;
+  shelterId?: string; // Opcional si es específico de un refugio
 }
+
+export type AdminScreenType = 
+  | 'dashboard'
+  | 'shelters'
+  | 'shelter_detail'
+  | 'food_inventory'
+  | 'evacuees'
+  | 'notices';
+
+export type SocialScreenType = 
+  | 'intake'
+  | 'registry'
+  | 'family_search'
+  | 'health_diet'
+  | 'shift_report';
