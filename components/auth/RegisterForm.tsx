@@ -48,7 +48,7 @@ export const RegisterForm: React.FC = () => {
           </div>
           <CardTitle className="text-2xl font-extrabold tracking-tight">Crear Cuenta en RefugIA</CardTitle>
           <CardDescription>
-            Alta de operador para refugio de emergencia y asistencia social
+            Alta de Perfil (public.perfiles) para Operadores del Sistema
           </CardDescription>
         </CardHeader>
 
@@ -68,7 +68,7 @@ export const RegisterForm: React.FC = () => {
           <form action={handleSubmit} className="space-y-3">
             <div>
               <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                Nombre y Apellido *
+                Nombre Completo *
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />

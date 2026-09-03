@@ -5,119 +5,90 @@ import { useShelter } from '@/context/ShelterContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { EvacuationReason, Gender } from '@/types/shelter';
-import { UserPlus, HeartPulse, ShieldAlert, Home, Users, CheckCircle2, Building2 } from 'lucide-react';
+import { TipoDocumento, Genero, VinculoFamiliar } from '@/types/shelter';
+import { UserPlus, Building2, Users, CheckCircle2, Home } from 'lucide-react';
 
 export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onSuccessTab }) => {
-  const { shelters, zones, addEvacuee } = useShelter();
+  const { refugios, gruposFamiliares, addPersonaConEstadia } = useShelter();
 
-  // Form State
-  const [shelterId, setShelterId] = useState<string>(shelters[0]?.id || 'ref_1');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [dni, setDni] = useState('');
-  const [age, setAge] = useState<number | ''>('');
-  const [gender, setGender] = useState<Gender>('femenino');
-  const [phone, setPhone] = useState('');
-  const [originNeighborhood, setOriginNeighborhood] = useState('');
-  const [evacuationReason, setEvacuationReason] = useState<EvacuationReason>('inundacion');
-  const [familyGroupId, setFamilyGroupId] = useState('');
-  const [familyRole, setFamilyRole] = useState<'jefe_hogar' | 'pareja' | 'hijo' | 'familiar' | 'individual'>('jefe_hogar');
+  // Selected Refugio for stay
+  const [refugioId, setRefugioId] = useState<number>(refugios[0]?.id || 1);
 
-  // Zones available for selected shelter
-  const availableZones = zones.filter((z) => z.shelterId === shelterId);
-  const [zoneId, setZoneId] = useState<string>(availableZones[0]?.id || zones[0]?.id || 'zona_a_ref1');
-  const [bedNumber, setBedNumber] = useState('');
+  // Persona Fields (public.personas)
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [tipoDocumento, setTipoDocumento] = useState<TipoDocumento>('dni');
+  const [numeroDocumento, setNumeroDocumento] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
+  const [genero, setGenero] = useState<Genero>('no_declara');
+  const [telefono, setTelefono] = useState('');
+  const [observacionesPersona, setObservacionesPersona] = useState('');
 
-  // Vulnerability Flags
-  const [isMinor, setIsMinor] = useState(false);
-  const [isElderly, setIsElderly] = useState(false);
-  const [isPregnant, setIsPregnant] = useState(false);
-  const [hasDisabledMobility, setHasDisabledMobility] = useState(false);
-  const [hasChronicCondition, setHasChronicCondition] = useState(false);
+  // Estadía Fields (public.estadias)
+  const [vinculo, setVinculo] = useState<VinculoFamiliar>('sin_vinculo');
+  const [observacionesEstadia, setObservacionesEstadia] = useState('');
 
-  const [medicalNotes, setMedicalNotes] = useState('');
-  const [dietaryNotes, setDietaryNotes] = useState('');
-  const [registeredBy, setRegisteredBy] = useState('Lic. Comunicador Social');
+  // Grupo Familiar Selection / Creation
+  const [crearNuevoGrupo, setCrearNuevoGrupo] = useState(false);
+  const [grupoExistenteId, setGrupoExistenteId] = useState<number | ''>('');
+  
+  // New Group Fields (public.grupos_familiares)
+  const [codigoGrupo, setCodigoGrupo] = useState('');
+  const [domicilioOrigen, setDomicilioOrigen] = useState('');
 
-  const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value);
-    if (!isNaN(val)) {
-      setAge(val);
-      if (val < 18) {
-        setIsMinor(true);
-        setIsElderly(false);
-      } else if (val >= 65) {
-        setIsElderly(true);
-        setIsMinor(false);
-      } else {
-        setIsMinor(false);
-        setIsElderly(false);
-      }
-    } else {
-      setAge('');
-    }
-  };
-
-  const handleShelterChange = (newShelterId: string) => {
-    setShelterId(newShelterId);
-    const newZones = zones.filter((z) => z.shelterId === newShelterId);
-    if (newZones.length > 0) {
-      setZoneId(newZones[0].id);
-    }
-  };
+  // Filter groups for selected refugio
+  const gruposRefugio = gruposFamiliares.filter((g) => g.refugio_id === refugioId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!firstName || !lastName || !dni || age === '' || !originNeighborhood) {
-      alert('Por favor complete los campos obligatorios (*).');
+    if (nombre.trim().length < 2 || apellido.trim().length < 2) {
+      alert('Nombre y Apellido deben tener al menos 2 caracteres.');
       return;
     }
 
-    addEvacuee({
-      shelterId,
-      firstName,
-      lastName,
-      dni,
-      age: Number(age),
-      gender,
-      phone,
-      originNeighborhood,
-      evacuationReason,
-      familyGroupId: familyGroupId.trim() ? familyGroupId.toUpperCase() : undefined,
-      familyRole,
-      zoneId,
-      bedNumber: bedNumber || undefined,
-      vulnerabilities: {
-        isMinor,
-        isElderly,
-        isPregnant,
-        hasDisabledMobility,
-        hasChronicCondition,
+    let nuevoGrupoPayload = undefined;
+    if (crearNuevoGrupo) {
+      const generatedCode = codigoGrupo.trim() ? codigoGrupo.trim() : `GF-${apellido.toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+      nuevoGrupoPayload = {
+        codigo: generatedCode,
+        apellido_referencia: apellido.trim(),
+        domicilio_origen: domicilioOrigen.trim() || undefined,
+      };
+    }
+
+    addPersonaConEstadia(
+      {
+        tipo_documento: tipoDocumento,
+        numero_documento: numeroDocumento.trim() || undefined,
+        apellido: apellido.trim(),
+        nombre: nombre.trim(),
+        fecha_nacimiento: fechaNacimiento || undefined,
+        genero,
+        telefono: telefono.trim() || undefined,
+        observaciones: observacionesPersona.trim() || undefined,
       },
-      medicalNotes,
-      dietaryNotes,
-      status: 'ingresado',
-      registeredBy,
-    });
+      {
+        refugio_id: refugioId,
+        vinculo,
+        grupo_id: !crearNuevoGrupo && grupoExistenteId !== '' ? Number(grupoExistenteId) : undefined,
+        observaciones: observacionesEstadia.trim() || undefined,
+      },
+      nuevoGrupoPayload
+    );
 
     // Reset Form
-    setFirstName('');
-    setLastName('');
-    setDni('');
-    setAge('');
-    setPhone('');
-    setOriginNeighborhood('');
-    setFamilyGroupId('');
-    setBedNumber('');
-    setMedicalNotes('');
-    setDietaryNotes('');
-    setIsMinor(false);
-    setIsElderly(false);
-    setIsPregnant(false);
-    setHasDisabledMobility(false);
-    setHasChronicCondition(false);
+    setNombre('');
+    setApellido('');
+    setNumeroDocumento('');
+    setFechaNacimiento('');
+    setTelefono('');
+    setObservacionesPersona('');
+    setObservacionesEstadia('');
+    setCrearNuevoGrupo(false);
+    setGrupoExistenteId('');
+    setCodigoGrupo('');
+    setDomicilioOrigen('');
 
     if (onSuccessTab) {
       onSuccessTab();
@@ -129,88 +100,98 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
       <CardHeader>
         <div className="flex items-center gap-2">
           <UserPlus className="h-6 w-6 text-blue-600" />
-          <CardTitle className="text-xl">Formulario de Recepción e Ingreso de Evacuaos</CardTitle>
+          <CardTitle className="text-xl">Alta de Persona y Registro de Estadía en Refugio</CardTitle>
         </div>
         <CardDescription>
-          Registro de admisión. Todo evacuado registrado actualiza en tiempo real la capacidad del refugio y las estadísticas del Administrador.
+          Mapeo de datos para las tablas public.personas, public.estadias y public.grupos_familiares.
         </CardDescription>
       </CardHeader>
 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* SECCION 0: Selección de Refugio de Destino */}
+          {/* SECCION 0: Refugio de Destino */}
           <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-200 flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-blue-600" /> Seleccionar Refugio de Destino para este Ingreso *
+              <Building2 className="h-4 w-4 text-blue-600" /> Refugio Asignado (public.estadias.refugio_id) *
             </label>
             <select
-              value={shelterId}
-              onChange={(e) => handleShelterChange(e.target.value)}
+              value={refugioId}
+              onChange={(e) => setRefugioId(Number(e.target.value))}
               className="h-10 w-full rounded-xl border border-blue-300 bg-white px-3 py-1 text-sm font-bold text-blue-900 shadow-xs dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-100"
             >
-              {shelters.map((s) => (
-                <option key={s.id} value={s.id}>
-                  🏢 {s.name} — ({s.occupied} / {s.capacity} camas ocupadas)
+              {refugios.map((r) => (
+                <option key={r.id} value={r.id}>
+                  🏢 {r.nombre} ({r.direccion}, {r.localidad}) — Capacidad: {r.capacidad}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* SECCION 1: Datos Personales */}
+          {/* SECCION 1: Persona (public.personas) */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-2 border-b pb-1">
-              <Users className="h-4 w-4" /> 1. Datos Personales de Identificación
+              <Users className="h-4 w-4" /> 1. Datos de la Persona (public.personas)
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Nombre *
+                  Apellido * (min. 2 caract.)
                 </label>
                 <Input
-                  placeholder="Ej: Ana María"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Ej: Gómez"
+                  value={apellido}
+                  onChange={(e) => setApellido(e.target.value)}
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Apellido *
+                  Nombre * (min. 2 caract.)
                 </label>
                 <Input
-                  placeholder="Ej: Pérez"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Ej: María Rosa"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  DNI / Documento *
+                  Tipo Documento
+                </label>
+                <select
+                  value={tipoDocumento}
+                  onChange={(e) => setTipoDocumento(e.target.value as TipoDocumento)}
+                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950"
+                >
+                  <option value="dni">DNI</option>
+                  <option value="pasaporte">Pasaporte</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                  Número Documento
                 </label>
                 <Input
-                  placeholder="Ej: 38.900.123"
-                  value={dni}
-                  onChange={(e) => setDni(e.target.value)}
-                  required
+                  placeholder="Ej: 32451890"
+                  value={numeroDocumento}
+                  onChange={(e) => setNumeroDocumento(e.target.value)}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Edad *
+                  Fecha de Nacimiento
                 </label>
                 <Input
-                  type="number"
-                  placeholder="Ej: 34"
-                  value={age}
-                  onChange={handleAgeChange}
-                  min="0"
-                  max="120"
-                  required
+                  type="date"
+                  value={fechaNacimiento}
+                  onChange={(e) => setFechaNacimiento(e.target.value)}
                 />
               </div>
 
@@ -219,208 +200,166 @@ export const EvacueeIntakeForm: React.FC<{ onSuccessTab?: () => void }> = ({ onS
                   Género
                 </label>
                 <select
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value as Gender)}
-                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
+                  value={genero}
+                  onChange={(e) => setGenero(e.target.value as Genero)}
+                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950"
                 >
                   <option value="femenino">Femenino</option>
                   <option value="masculino">Masculino</option>
                   <option value="otro">Otro</option>
-                  <option value="no_especifica">Prefiere no especificar</option>
+                  <option value="no_declara">No declara</option>
                 </select>
               </div>
 
-              <div>
+              <div className="md:col-span-3">
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                   Teléfono de Contacto
                 </label>
                 <Input
-                  placeholder="Ej: 11-2345-6789"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Ej: 3794-567890"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                />
+              </div>
+
+              <div className="md:col-span-3">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                  Observaciones de la Persona (Salud, dietas Sin TACC, medicación, etc.)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Ej: Hipotiroidismo, celíaco (dieta Sin TACC), hipertensión..."
+                  value={observacionesPersona}
+                  onChange={(e) => setObservacionesPersona(e.target.value)}
+                  className="w-full rounded-md border border-zinc-300 p-2 text-xs dark:bg-zinc-950 dark:border-zinc-700"
                 />
               </div>
             </div>
           </div>
 
-          {/* SECCION 2: Origen y Causa */}
+          {/* SECCION 2: Grupo Familiar (public.grupos_familiares) */}
           <div className="space-y-4 pt-2">
             <h3 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-2 border-b pb-1">
-              <Home className="h-4 w-4" /> 2. Origen y Motivo de Evacuación
+              <Home className="h-4 w-4" /> 2. Grupo Familiar (public.grupos_familiares & vinculo)
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Barrio / Zona de Origen *
-                </label>
-                <Input
-                  placeholder="Ej: Barrio San Cayetano, Sector 3"
-                  value={originNeighborhood}
-                  onChange={(e) => setOriginNeighborhood(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Causa de Evacuación
+                  Vínculo Familiar en la Estadía
                 </label>
                 <select
-                  value={evacuationReason}
-                  onChange={(e) => setEvacuationReason(e.target.value as EvacuationReason)}
-                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
+                  value={vinculo}
+                  onChange={(e) => setVinculo(e.target.value as VinculoFamiliar)}
+                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950"
                 >
-                  <option value="inundacion">Inundación / Crecida de Río</option>
-                  <option value="temporal">Temporal / Vientos Fuertes</option>
-                  <option value="incendio">Incendio Urbano / Forestal</option>
-                  <option value="derrumbe">Derrumbe / Riego Estructural</option>
-                  <option value="otro">Otro Evento de Emergencia</option>
+                  <option value="sin_vinculo">Sin Vínculo (Ingreso Individual)</option>
+                  <option value="jefe_hogar">Jefe de Hogar / Responsable</option>
+                  <option value="pareja">Pareja / Cónyuge</option>
+                  <option value="hijo">Hijo / Menor a cargo</option>
+                  <option value="familiar">Familiar Directo</option>
                 </select>
               </div>
-            </div>
-          </div>
-
-          {/* SECCION 3: Salud y Vulnerabilidades */}
-          <div className="space-y-4 pt-2">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 flex items-center gap-2 border-b pb-1">
-              <HeartPulse className="h-4 w-4" /> 3. Evaluación de Salud y Indicadores de Vulnerabilidad
-            </h3>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 bg-purple-50/50 dark:bg-purple-950/20 p-4 rounded-xl border border-purple-200 dark:border-purple-900/50">
-              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isMinor}
-                  onChange={(e) => setIsMinor(e.target.checked)}
-                  className="rounded text-purple-600 focus:ring-purple-500 h-4 w-4"
-                />
-                <span>🚸 Menor de Edad</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isElderly}
-                  onChange={(e) => setIsElderly(e.target.checked)}
-                  className="rounded text-purple-600 focus:ring-purple-500 h-4 w-4"
-                />
-                <span>👴 Adulto Mayor</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isPregnant}
-                  onChange={(e) => setIsPregnant(e.target.checked)}
-                  className="rounded text-purple-600 focus:ring-purple-500 h-4 w-4"
-                />
-                <span>🤰 Embarazada</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasDisabledMobility}
-                  onChange={(e) => setHasDisabledMobility(e.target.checked)}
-                  className="rounded text-purple-600 focus:ring-purple-500 h-4 w-4"
-                />
-                <span>♿ Movilidad Reducida</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasChronicCondition}
-                  onChange={(e) => setHasChronicCondition(e.target.checked)}
-                  className="rounded text-purple-600 focus:ring-purple-500 h-4 w-4"
-                />
-                <span>🏥 Condición Crónica</span>
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Observaciones Médicas / Medicación Requerida
-                </label>
-                <Input
-                  placeholder="Ej: Diabético tipo 2, requiere insulina fría..."
-                  value={medicalNotes}
-                  onChange={(e) => setMedicalNotes(e.target.value)}
-                />
-              </div>
 
               <div>
                 <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Requerimientos Alimentarios Especiales
+                  Asignación de Grupo Familiar
                 </label>
-                <Input
-                  placeholder="Ej: Celíaco (Sin TACC), Hipoalergénico, Sin Sal..."
-                  value={dietaryNotes}
-                  onChange={(e) => setDietaryNotes(e.target.value)}
-                />
+                <div className="flex items-center gap-4 mt-2">
+                  <label className="text-xs flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="grupoOption"
+                      checked={!crearNuevoGrupo}
+                      onChange={() => setCrearNuevoGrupo(false)}
+                    />
+                    <span>Asignar a Grupo Existente</span>
+                  </label>
+                  <label className="text-xs flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="grupoOption"
+                      checked={crearNuevoGrupo}
+                      onChange={() => setCrearNuevoGrupo(true)}
+                    />
+                    <span>Crear Nuevo Grupo Familiar</span>
+                  </label>
+                </div>
               </div>
+
+              {!crearNuevoGrupo ? (
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                    Seleccionar Grupo Familiar Existente en este Refugio
+                  </label>
+                  <select
+                    value={grupoExistenteId}
+                    onChange={(e) => setGrupoExistenteId(e.target.value !== '' ? Number(e.target.value) : '')}
+                    className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950"
+                  >
+                    <option value="">Ninguno (Sin Grupo)</option>
+                    {gruposRefugio.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.codigo} — Familia {g.apellido_referencia} ({g.domicilio_origen || 'Sin dom.'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Código de Grupo (Opcional, autogenerado si se omite)
+                    </label>
+                    <Input
+                      placeholder="Ej: GF-PEREZ-01"
+                      value={codigoGrupo}
+                      onChange={(e) => setCodigoGrupo(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                      Domicilio de Origen (Barrio / Dirección)
+                    </label>
+                    <Input
+                      placeholder="Ej: Barrio La Tosquera, Mz 4"
+                      value={domicilioOrigen}
+                      onChange={(e) => setDomicilioOrigen(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          {/* SECCION 4: Asignación de Refugio y Cama */}
+          {/* SECCION 3: Estadía (public.estadias) */}
           <div className="space-y-4 pt-2">
             <h3 className="text-sm font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-2 border-b pb-1">
-              <ShieldAlert className="h-4 w-4" /> 4. Asignación de Zona y Grupo Familiar
+              <Building2 className="h-4 w-4" /> 3. Detalles de Estadía (public.estadias)
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Zona de Alojamiento Asignada *
-                </label>
-                <select
-                  value={zoneId}
-                  onChange={(e) => setZoneId(e.target.value)}
-                  className="h-9 w-full rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm shadow-sm dark:border-zinc-700 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
-                >
-                  {availableZones.map((z) => (
-                    <option key={z.id} value={z.id}>
-                      {z.name} ({z.capacity - z.occupied} camas libres)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Número de Cama / Módulo
-                </label>
-                <Input
-                  placeholder="Ej: A-15"
-                  value={bedNumber}
-                  onChange={(e) => setBedNumber(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                  Código de Grupo Familiar (Opcional)
-                </label>
-                <Input
-                  placeholder="Ej: FAM-PEREZ-01"
-                  value={familyGroupId}
-                  onChange={(e) => setFamilyGroupId(e.target.value)}
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                Observaciones de Ingreso de Estadía
+              </label>
+              <Input
+                placeholder="Ej: Asignada cama 14, ingresa en buen estado general..."
+                value={observacionesEstadia}
+                onChange={(e) => setObservacionesEstadia(e.target.value)}
+              />
             </div>
           </div>
 
           {/* Submit */}
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="pt-4 flex items-center justify-end border-t border-zinc-200 dark:border-zinc-800">
             <Button
               type="submit"
               size="lg"
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 shadow-md"
             >
               <CheckCircle2 className="h-5 w-5 mr-2" />
-              Completar e Ingresar Evacuado
+              Guardar Persona y Dar de Alta Estadía
             </Button>
           </div>
         </form>
