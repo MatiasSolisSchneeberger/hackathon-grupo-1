@@ -15,13 +15,7 @@ import {
 } from '@/types/shelter';
 
 interface ShelterContextType {
-  currentUser: UserProfile | null;
-  authScreen: 'login' | 'register';
-  setAuthScreen: (screen: 'login' | 'register') => void;
-  login: (email: string, password: string, role: UserRole, customName?: string) => void;
-  register: (name: string, email: string, password: string, role: UserRole) => void;
-  logout: () => void;
-  
+  currentUser: UserProfile;
   currentRole: UserRole;
   setCurrentRole: (role: UserRole) => void;
 
@@ -455,10 +449,9 @@ const initialNotices: NoticeAlert[] = [
 
 const ShelterContext = createContext<ShelterContextType | undefined>(undefined);
 
-export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
-  const [currentRole, setCurrentRole] = useState<UserRole>('admin');
+export const ShelterProvider: React.FC<{ children: React.ReactNode; initialUser: UserProfile }> = ({ children, initialUser }) => {
+  const [currentUser] = useState<UserProfile>(initialUser);
+  const [currentRole, setCurrentRole] = useState<UserRole>(initialUser.role);
 
   // Navigation Screens
   const [activeAdminScreen, setActiveAdminScreen] = useState<AdminScreenType>('dashboard');
@@ -481,38 +474,6 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
-
-  const login = (email: string, password: string, role: UserRole, customName?: string) => {
-    const formattedName = customName || (email.split('@')[0].replace('.', ' ').toUpperCase());
-    const user: UserProfile = {
-      id: `usr_${Date.now()}`,
-      name: formattedName,
-      email,
-      role,
-    };
-
-    setCurrentUser(user);
-    setCurrentRole(role);
-    setToastMessage(`👋 Bienvenido ${user.name} (${role === 'admin' ? 'Administrador' : 'Comunicador Social'})`);
-  };
-
-  const register = (name: string, email: string, password: string, role: UserRole) => {
-    const user: UserProfile = {
-      id: `usr_${Date.now()}`,
-      name,
-      email,
-      role,
-    };
-
-    setCurrentUser(user);
-    setCurrentRole(role);
-    setToastMessage(`✅ Cuenta registrada e ingreso exitoso. ¡Bienvenido ${user.name}!`);
-  };
-
-  const logout = () => {
-    setCurrentUser(null);
-    setToastMessage('Sesión cerrada correctamente.');
-  };
 
   const addShelter = (data: Omit<Shelter, 'id' | 'occupied' | 'status'>) => {
     const newShelterId = `ref_${Date.now()}`;
@@ -683,12 +644,6 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <ShelterContext.Provider
       value={{
         currentUser,
-        authScreen,
-        setAuthScreen,
-        login,
-        register,
-        logout,
-
         currentRole,
         setCurrentRole,
 

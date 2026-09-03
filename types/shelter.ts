@@ -1,4 +1,12 @@
 export type UserRole = 'admin' | 'social_worker';
+export type DbRol = 'admin' | 'trabajador_social';
+
+export interface Perfil {
+  id: string;
+  nombre_completo: string;
+  rol: DbRol;
+  activo: boolean;
+}
 
 export type EvacuationReason = 'inundacion' | 'incendio' | 'temporal' | 'derrumbe' | 'otro';
 

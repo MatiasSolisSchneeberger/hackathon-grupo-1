@@ -1,13 +1,14 @@
-"use client";
+'use client';
 
 import React from 'react';
 import { useShelter } from '@/context/ShelterContext';
+import { cerrarSesion } from '@/app/auth/actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, ClipboardList, AlertTriangle, Users, Building2, LogOut, User } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { currentUser, logout, currentRole, setCurrentRole, zones, notices, toastMessage } = useShelter();
+  const { currentUser, currentRole, setCurrentRole, zones, notices, toastMessage } = useShelter();
 
   const totalCapacity = zones.reduce((acc, z) => acc + z.capacity, 0);
   const totalOccupied = zones.reduce((acc, z) => acc + z.occupied, 0);
@@ -85,38 +86,42 @@ export const Header: React.FC = () => {
                 </div>
               </div>
 
-              {/* Quick Role Switcher for MVP Testing */}
-              <div className="hidden xl:flex items-center gap-1 border-l border-zinc-200 dark:border-zinc-800 pl-2">
-                <button
-                  onClick={() => setCurrentRole('admin')}
-                  className={`p-1 px-2 rounded text-[11px] font-bold ${
-                    currentRole === 'admin' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-800'
-                  }`}
-                  title="Cambiar a Vista Admin"
-                >
-                  Admin
-                </button>
-                <button
-                  onClick={() => setCurrentRole('social_worker')}
-                  className={`p-1 px-2 rounded text-[11px] font-bold ${
-                    currentRole === 'social_worker' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-800'
-                  }`}
-                  title="Cambiar a Vista Comunicador"
-                >
-                  Comunicador
-                </button>
-              </div>
+              {/* Quick Role Switcher for MVP Testing (Admin only) */}
+              {currentUser.role === 'admin' && (
+                <div className="hidden xl:flex items-center gap-1 border-l border-zinc-200 dark:border-zinc-800 pl-2">
+                  <button
+                    onClick={() => setCurrentRole('admin')}
+                    className={`p-1 px-2 rounded text-[11px] font-bold ${
+                      currentRole === 'admin' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-800'
+                    }`}
+                    title="[PREVISUALIZACIÓN] Cambiar a Vista Admin"
+                  >
+                    Admin
+                  </button>
+                  <button
+                    onClick={() => setCurrentRole('social_worker')}
+                    className={`p-1 px-2 rounded text-[11px] font-bold ${
+                      currentRole === 'social_worker' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-800'
+                    }`}
+                    title="[PREVISUALIZACIÓN] Cambiar a Vista Comunicador"
+                  >
+                    Comunicador
+                  </button>
+                </div>
+              )}
 
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={logout}
-                className="text-zinc-500 hover:text-red-600 dark:hover:text-red-400 ml-1"
-                title="Cerrar Sesión"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden md:inline ml-1 text-xs">Salir</span>
-              </Button>
+              <form action={cerrarSesion} className="contents">
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="xs"
+                  className="text-zinc-500 hover:text-red-600 dark:hover:text-red-400 ml-1"
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden md:inline ml-1 text-xs">Salir</span>
+                </Button>
+              </form>
             </div>
           ) : (
             <div className="text-xs font-semibold text-zinc-500 flex items-center gap-2">

@@ -342,7 +342,7 @@ export const AdminDashboard: React.FC = () => {
                       <span className="font-bold block text-zinc-900 dark:text-zinc-100">{res.name}</span>
                       <span className="text-zinc-500">Stock: {res.quantity} {res.unit}</span>
                     </div>
-                    <Button size="xs" variant="warning" onClick={() => setSelectedResource(res)}>
+                    <Button size="xs" variant="outline" onClick={() => setSelectedResource(res)}>
                       Reabastecer
                     </Button>
                   </div>
