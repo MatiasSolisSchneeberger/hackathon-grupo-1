@@ -26,7 +26,7 @@ function MainContent() {
 
       {/* Main Workspace Area */}
       <main className="flex-1 p-4 lg:p-6 max-w-7xl overflow-x-hidden">
-        {currentRole === 'admin' ? (
+        {currentRole === 'administrador' ? (
           <AdminDashboard />
         ) : (
           <SocialWorkerDashboard />

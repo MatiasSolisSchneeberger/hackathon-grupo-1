@@ -2,475 +2,265 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
-  Evacuee, 
-  ShelterZone, 
-  ResourceItem, 
-  NoticeAlert, 
-  UserRole, 
-  EvacueeStatus, 
-  UserProfile,
-  Shelter,
-  AdminScreenType,
-  SocialScreenType
+  Perfil, 
+  Refugio, 
+  Asignacion, 
+  Persona, 
+  GrupoFamiliar, 
+  Estadia, 
+  RolUsuario, 
+  AdminScreenType, 
+  SocialScreenType 
 } from '@/types/shelter';
 
 interface ShelterContextType {
-  currentUser: UserProfile | null;
+  currentUser: Perfil | null;
   authScreen: 'login' | 'register';
   setAuthScreen: (screen: 'login' | 'register') => void;
-  login: (email: string, password: string, role: UserRole, customName?: string) => void;
-  register: (name: string, email: string, password: string, role: UserRole) => void;
+  login: (email: string, password: string, rol: RolUsuario, nombreCompleto?: string) => void;
+  register: (nombreCompleto: string, email: string, password: string, rol: RolUsuario) => void;
   logout: () => void;
   
-  currentRole: UserRole;
-  setCurrentRole: (role: UserRole) => void;
+  currentRole: RolUsuario;
+  setCurrentRole: (rol: RolUsuario) => void;
 
-  // Active Screen States
   activeAdminScreen: AdminScreenType;
   setActiveAdminScreen: (screen: AdminScreenType) => void;
   activeSocialScreen: SocialScreenType;
   setActiveSocialScreen: (screen: SocialScreenType) => void;
-  selectedShelterId: string | null;
-  setSelectedShelterId: (id: string | null) => void;
+  selectedRefugioId: number | null;
+  setSelectedRefugioId: (id: number | null) => void;
 
-  // Domain Entities
-  shelters: Shelter[];
-  evacuees: Evacuee[];
-  zones: ShelterZone[];
-  resources: ResourceItem[];
-  notices: NoticeAlert[];
+  // Schema Collections
+  perfiles: Perfil[];
+  refugios: Refugio[];
+  asignaciones: Asignacion[];
+  personas: Persona[];
+  gruposFamiliares: GrupoFamiliar[];
+  estadias: Estadia[];
 
-  // Mutators
-  addShelter: (data: Omit<Shelter, 'id' | 'occupied' | 'status'>) => void;
-  addEvacuee: (evacueeData: Omit<Evacuee, 'id' | 'entryTimestamp'>) => void;
-  updateEvacueeStatus: (id: string, status: EvacueeStatus, notes?: string) => void;
-  restockResource: (id: string, amountToAdd: number) => void;
-  addNotice: (title: string, message: string, type: NoticeAlert['type'], shelterId?: string) => void;
+  // Mutators strictly matching DB schema
+  addRefugio: (data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => void;
+  addPersonaConEstadia: (
+    personaData: Omit<Persona, 'id' | 'creado_en' | 'actualizado_en'>,
+    estadiaData: Omit<Estadia, 'id' | 'persona_id' | 'fecha_ingreso' | 'creado_en' | 'actualizado_en'>,
+    nuevoGrupo?: { codigo: string; apellido_referencia: string; domicilio_origen?: string }
+  ) => void;
+  registrarEgreso: (estadiaId: number, motivoEgreso: string, observacionesEgreso?: string) => void;
+  addGrupoFamiliar: (data: Omit<GrupoFamiliar, 'id' | 'fecha_alta' | 'creado_en' | 'actualizado_en'>) => void;
+  
   toastMessage: string | null;
   setToastMessage: (msg: string | null) => void;
 }
 
-const initialShelters: Shelter[] = [
+const initialPerfiles: Perfil[] = [
   {
-    id: 'ref_1',
-    name: 'Refugio Central N° 1 - Polideportivo Municipal',
-    address: 'Av. Las Heras 1450',
-    city: 'Resistencia',
-    managerName: 'Ing. Fernando Rossi',
-    phone: '0362-4455-667',
-    capacity: 150,
-    occupied: 104,
-    status: 'operativo',
-    infrastructureType: 'polideportivo',
+    id: 'usr-admin-1',
+    nombre_completo: 'Lic. Fernando Rossi (Administrador)',
+    rol: 'administrador',
+    activo: true,
   },
   {
-    id: 'ref_2',
-    name: 'Refugio N° 2 - Escuela Primaria N° 14',
-    address: 'Calle Belgrano 820',
-    city: 'Resistencia',
-    managerName: 'Lic. Graciela Maidana',
-    phone: '0362-4433-221',
-    capacity: 80,
-    occupied: 45,
-    status: 'operativo',
-    infrastructureType: 'escuela',
-  },
-  {
-    id: 'ref_3',
-    name: 'Refugio N° 3 - Centro Comunitario Belgrano',
-    address: 'Paso de la Patria 340',
-    city: 'Resistencia',
-    managerName: 'Carlos Benítez',
-    phone: '0362-4411-998',
-    capacity: 60,
-    occupied: 22,
-    status: 'operativo',
-    infrastructureType: 'centro_comunitario',
+    id: 'usr-social-1',
+    nombre_completo: 'Lic. Sofía Martínez (Trabajadora Social)',
+    rol: 'trabajador_social',
+    activo: true,
   },
 ];
 
-const initialZones: ShelterZone[] = [
-  // Refugio 1
+const initialRefugios: Refugio[] = [
   {
-    id: 'zona_a_ref1',
-    shelterId: 'ref_1',
-    name: 'Zona A - Ala Familias',
-    code: 'ZA-100',
-    capacity: 50,
-    occupied: 38,
-    description: 'Espacio adaptado para familias con niños y tutores a cargo.',
-    category: 'familias',
+    id: 1,
+    nombre: 'Refugio Municipal Central N° 1',
+    direccion: 'Av. 3 de Abril 1450',
+    localidad: 'Corrientes',
+    capacidad: 120,
+    telefono: '3794-455667',
+    referente: 'Dr. Alejandro Vera',
+    observaciones: 'Polideportivo acondicionado con duchas y comedor comunitario.',
+    activo: true,
+    latitud: -27.4692,
+    longitud: -58.8306,
+    creado_en: '2026-09-01T08:00:00Z',
   },
   {
-    id: 'zona_b_ref1',
-    shelterId: 'ref_1',
-    name: 'Zona B - Adultos Mayores y Salud',
-    code: 'ZB-200',
-    capacity: 25,
-    occupied: 18,
-    description: 'Mapeo cercano a estación de enfermería y accesibilidad reducida.',
-    category: 'adultos_mayores',
+    id: 2,
+    nombre: 'Refugio Escuela N° 14 San Martín',
+    direccion: 'Calle Belgrano 820',
+    localidad: 'Corrientes',
+    capacidad: 80,
+    telefono: '3794-433221',
+    referente: 'Prof. Carmen Ojeda',
+    observaciones: 'Aulas acondicionadas con colchones y área médica.',
+    activo: true,
+    latitud: -27.4725,
+    longitud: -58.8350,
+    creado_en: '2026-09-02T10:00:00Z',
   },
   {
-    id: 'zona_c_ref1',
-    shelterId: 'ref_1',
-    name: 'Zona C - Alojamiento General',
-    code: 'ZC-300',
-    capacity: 60,
-    occupied: 42,
-    description: 'Módulos de camas individuales para adultos y jóvenes.',
-    category: 'general',
-  },
-  {
-    id: 'zona_d_ref1',
-    shelterId: 'ref_1',
-    name: 'Zona D - Atención Médica & Aislamiento',
-    code: 'ZD-400',
-    capacity: 15,
-    occupied: 6,
-    description: 'Área reservada para monitoreo clínico y observación.',
-    category: 'medica_aislamiento',
-  },
-
-  // Refugio 2
-  {
-    id: 'zona_a_ref2',
-    shelterId: 'ref_2',
-    name: 'Gimnasio Principal - Familias',
-    code: 'REF2-ZA',
-    capacity: 50,
-    occupied: 30,
-    description: 'Aulas acondicionadas con literas y módulos individuales.',
-    category: 'familias',
-  },
-  {
-    id: 'zona_b_ref2',
-    shelterId: 'ref_2',
-    name: 'Sector Aulas B - Adultos',
-    code: 'REF2-ZB',
-    capacity: 30,
-    occupied: 15,
-    description: 'Espacio tranquilo reservado para adultos y adultos mayores.',
-    category: 'adultos_mayores',
-  },
-
-  // Refugio 3
-  {
-    id: 'zona_a_ref3',
-    shelterId: 'ref_3',
-    name: 'Salón Único - Alojamiento General',
-    code: 'REF3-ZA',
-    capacity: 60,
-    occupied: 22,
-    description: 'Salón multiuso acondicionado con catres y mantas.',
-    category: 'general',
+    id: 3,
+    nombre: 'Refugio Centro Comunitario Belgrano',
+    direccion: 'Calle Junín 2100',
+    localidad: 'Corrientes',
+    capacidad: 50,
+    telefono: '3794-411998',
+    referente: 'Carlos Benítez',
+    observaciones: 'Centro vecinal adaptado para recepción nocturna.',
+    activo: true,
+    latitud: -27.4650,
+    longitud: -58.8210,
+    creado_en: '2026-09-02T14:30:00Z',
   },
 ];
 
-const initialResources: ResourceItem[] = [
-  // Refugio 1
+const initialAsignaciones: Asignacion[] = [
   {
-    id: 'res_1',
-    shelterId: 'ref_1',
-    category: 'agua',
-    name: 'Agua Potable (Bidones 5L)',
-    quantity: 42,
-    unit: 'bidones',
-    minThreshold: 50,
-    status: 'bajo',
-    lastRestocked: '2026-09-03 08:30',
+    usuario_id: 'usr-social-1',
+    refugio_id: 1,
   },
   {
-    id: 'res_2',
-    shelterId: 'ref_1',
-    category: 'alimentos',
-    name: 'Raciones de Alimento No Perecedero',
-    quantity: 340,
-    unit: 'raciones',
-    minThreshold: 100,
-    status: 'normal',
-    lastRestocked: '2026-09-02 18:00',
-  },
-  {
-    id: 'res_3',
-    shelterId: 'ref_1',
-    category: 'alimentos',
-    name: 'Viandas Específicas Sin TACC (Celíacos)',
-    quantity: 12,
-    unit: 'viandas',
-    minThreshold: 25,
-    status: 'critico',
-    lastRestocked: '2026-09-02 14:00',
-  },
-  {
-    id: 'res_4',
-    shelterId: 'ref_1',
-    category: 'abrigo',
-    name: 'Frazadas y Mantas Térmicas',
-    quantity: 85,
-    unit: 'unidades',
-    minThreshold: 100,
-    status: 'bajo',
-    lastRestocked: '2026-09-01 14:20',
-  },
-  {
-    id: 'res_5',
-    shelterId: 'ref_1',
-    category: 'higiene',
-    name: 'Kits de Higiene Personal',
-    quantity: 22,
-    unit: 'kits',
-    minThreshold: 40,
-    status: 'critico',
-    lastRestocked: '2026-08-30 11:00',
-  },
-
-  // Refugio 2
-  {
-    id: 'res_6',
-    shelterId: 'ref_2',
-    category: 'agua',
-    name: 'Agua Potable (Bidones 5L)',
-    quantity: 75,
-    unit: 'bidones',
-    minThreshold: 30,
-    status: 'normal',
-    lastRestocked: '2026-09-03 09:15',
-  },
-  {
-    id: 'res_7',
-    shelterId: 'ref_2',
-    category: 'alimentos',
-    name: 'Leche Maternizada y Pañales Infantil',
-    quantity: 18,
-    unit: 'packs',
-    minThreshold: 20,
-    status: 'bajo',
-    lastRestocked: '2026-09-02 20:15',
-  },
-  {
-    id: 'res_8',
-    shelterId: 'ref_2',
-    category: 'alimentos',
-    name: 'Raciones Secas / Almacén',
-    quantity: 190,
-    unit: 'raciones',
-    minThreshold: 60,
-    status: 'normal',
-    lastRestocked: '2026-09-02 11:30',
-  },
-
-  // Refugio 3
-  {
-    id: 'res_9',
-    shelterId: 'ref_3',
-    category: 'alimentos',
-    name: 'Kits Alimentarios de Emergencia',
-    quantity: 50,
-    unit: 'kits',
-    minThreshold: 30,
-    status: 'normal',
-    lastRestocked: '2026-09-03 07:00',
-  },
-  {
-    id: 'res_10',
-    shelterId: 'ref_3',
-    category: 'medicina',
-    name: 'Botiquines de Primeros Auxilios',
-    quantity: 8,
-    unit: 'cajas',
-    minThreshold: 10,
-    status: 'bajo',
-    lastRestocked: '2026-09-01 16:00',
+    usuario_id: 'usr-social-1',
+    refugio_id: 2,
   },
 ];
 
-const initialEvacuees: Evacuee[] = [
+const initialPersonas: Persona[] = [
   {
-    id: 'eva_1',
-    shelterId: 'ref_1',
-    firstName: 'María Rosa',
-    lastName: 'Gómez',
-    dni: '32.451.890',
-    age: 41,
-    gender: 'femenino',
-    phone: '11-4567-8901',
-    originNeighborhood: 'Barrio Las Riveras',
-    evacuationReason: 'inundacion',
-    familyGroupId: 'FAM-GOMEZ-01',
-    familyRole: 'jefe_hogar',
-    zoneId: 'zona_a_ref1',
-    bedNumber: 'A-12',
-    vulnerabilities: {
-      isMinor: false,
-      isElderly: false,
-      isPregnant: false,
-      hasDisabledMobility: false,
-      hasChronicCondition: true,
-    },
-    medicalNotes: 'Hipotiroidismo. Trajo su medicación habitual.',
-    dietaryNotes: 'Dieta Hipoalergénica',
-    status: 'ingresado',
-    entryTimestamp: '2026-09-03T07:45:00Z',
-    registeredBy: 'Lic. Sofía Martínez',
+    id: 'per-1111',
+    tipo_documento: 'dni',
+    numero_documento: '32.451.890',
+    numero_documento_norm: '32451890',
+    apellido: 'Gómez',
+    nombre: 'María Rosa',
+    fecha_nacimiento: '1985-04-12',
+    genero: 'femenino',
+    telefono: '3794-567890',
+    observaciones: 'Hipotiroidismo. Trajo medicación. Dieta Sin TACC.',
+    creado_en: '2026-09-03T07:45:00Z',
   },
   {
-    id: 'eva_2',
-    shelterId: 'ref_1',
-    firstName: 'Lucas',
-    lastName: 'Gómez',
-    dni: '54.120.334',
-    age: 8,
-    gender: 'masculino',
-    originNeighborhood: 'Barrio Las Riveras',
-    evacuationReason: 'inundacion',
-    familyGroupId: 'FAM-GOMEZ-01',
-    familyRole: 'hijo',
-    zoneId: 'zona_a_ref1',
-    bedNumber: 'A-13',
-    vulnerabilities: {
-      isMinor: true,
-      isElderly: false,
-      isPregnant: false,
-      hasDisabledMobility: false,
-      hasChronicCondition: false,
-    },
-    medicalNotes: 'Sin antecedentes relevantes.',
-    status: 'ingresado',
-    entryTimestamp: '2026-09-03T07:45:00Z',
-    registeredBy: 'Lic. Sofía Martínez',
+    id: 'per-2222',
+    tipo_documento: 'dni',
+    numero_documento: '54.120.334',
+    numero_documento_norm: '54120334',
+    apellido: 'Gómez',
+    nombre: 'Lucas',
+    fecha_nacimiento: '2018-09-05',
+    genero: 'masculino',
+    observaciones: 'Menor a cargo de María Rosa Gómez.',
+    creado_en: '2026-09-03T07:45:00Z',
   },
   {
-    id: 'eva_3',
-    shelterId: 'ref_1',
-    firstName: 'Don Roberto',
-    lastName: 'Fernández',
-    dni: '14.890.123',
-    age: 76,
-    gender: 'masculino',
-    phone: '11-8901-2345',
-    originNeighborhood: 'Villa del Sol',
-    evacuationReason: 'temporal',
-    familyGroupId: 'INDIV-76',
-    familyRole: 'individual',
-    zoneId: 'zona_b_ref1',
-    bedNumber: 'B-04',
-    vulnerabilities: {
-      isMinor: false,
-      isElderly: true,
-      isPregnant: false,
-      hasDisabledMobility: true,
-      hasChronicCondition: true,
-    },
-    medicalNotes: 'Hipertensión arterial y movilidad reducida (anda con bastón). Requiere asistencia para subir escaleras.',
-    dietaryNotes: 'Sin TACC (Celíaco) / Bajo en sodio',
-    status: 'ingresado',
-    entryTimestamp: '2026-09-03T08:15:00Z',
-    registeredBy: 'Carlos Benítez',
+    id: 'per-3333',
+    tipo_documento: 'dni',
+    numero_documento: '14.890.123',
+    numero_documento_norm: '14890123',
+    apellido: 'Fernández',
+    nombre: 'Don Roberto',
+    fecha_nacimiento: '1950-02-18',
+    genero: 'masculino',
+    telefono: '3794-890123',
+    observaciones: 'Hipertensión arterial. Anda con bastón. Movilidad reducida.',
+    creado_en: '2026-09-03T08:15:00Z',
   },
   {
-    id: 'eva_4',
-    shelterId: 'ref_2',
-    firstName: 'Camila',
-    lastName: 'Benítez',
-    dni: '41.230.988',
-    age: 26,
-    gender: 'femenino',
-    phone: '11-6677-8899',
-    originNeighborhood: 'Sector Costanera',
-    evacuationReason: 'inundacion',
-    familyGroupId: 'FAM-BENITEZ-02',
-    familyRole: 'jefe_hogar',
-    zoneId: 'zona_a_ref2',
-    bedNumber: 'E14-08',
-    vulnerabilities: {
-      isMinor: false,
-      isElderly: false,
-      isPregnant: true,
-      hasDisabledMobility: false,
-      hasChronicCondition: false,
-    },
-    medicalNotes: 'Gestación semana 32. Controles en regla.',
-    dietaryNotes: 'Suplementación de hierro',
-    status: 'ingresado',
-    entryTimestamp: '2026-09-03T09:30:00Z',
-    registeredBy: 'Lic. Sofía Martínez',
-  },
-  {
-    id: 'eva_5',
-    shelterId: 'ref_3',
-    firstName: 'Jorge O.',
-    lastName: 'Martínez',
-    dni: '28.901.443',
-    age: 49,
-    gender: 'masculino',
-    originNeighborhood: 'Barrio La Florida',
-    evacuationReason: 'incendio',
-    familyGroupId: 'INDIV-49',
-    familyRole: 'individual',
-    zoneId: 'zona_a_ref3',
-    bedNumber: 'C-02',
-    vulnerabilities: {
-      isMinor: false,
-      isElderly: false,
-      isPregnant: false,
-      hasDisabledMobility: false,
-      hasChronicCondition: true,
-    },
-    medicalNotes: 'Inhalación leve de humo. Evaluado por médico, en observación preventiva.',
-    status: 'en_transito',
-    entryTimestamp: '2026-09-03T10:10:00Z',
-    registeredBy: 'Dr. Alejandro Vera',
+    id: 'per-4444',
+    tipo_documento: 'dni',
+    numero_documento: '41.230.988',
+    numero_documento_norm: '41230988',
+    apellido: 'Benítez',
+    nombre: 'Camila',
+    fecha_nacimiento: '2000-11-20',
+    genero: 'femenino',
+    telefono: '3794-667788',
+    observaciones: 'Gestación semana 32. Requiere controles de presión.',
+    creado_en: '2026-09-03T09:30:00Z',
   },
 ];
 
-const initialNotices: NoticeAlert[] = [
+const initialGruposFamiliares: GrupoFamiliar[] = [
   {
-    id: 'not_1',
-    title: 'Ingreso Masivo Concomitante',
-    message: 'Se aguarda un contingente de 15 personas provenientes del Barrio San Cayetano en los próximos 45 minutos.',
-    type: 'urgent',
-    timestamp: 'Hoy, 11:20 hs',
-    author: 'Coordinación Defensa Civil',
-    shelterId: 'ref_1',
+    id: 101,
+    refugio_id: 1,
+    codigo: 'GF-GOMEZ-01',
+    apellido_referencia: 'Gómez',
+    responsable_persona_id: 'per-1111',
+    domicilio_origen: 'Barrio La Tosquera, Manzana 4',
+    observaciones: 'Familia evacuada por anegamiento de vivienda.',
+    fecha_alta: '2026-09-03T07:45:00Z',
   },
   {
-    id: 'not_2',
-    title: 'Campaña de Vacunación Antitetánica',
-    message: 'El equipo de salud iniciará la colocación de refuerzos antitetánicos en Zona A y C a partir de las 14:00 hs.',
-    type: 'info',
-    timestamp: 'Hoy, 10:00 hs',
-    author: 'Dra. Elena Ruiz (Área Médica)',
+    id: 102,
+    refugio_id: 2,
+    codigo: 'GF-BENITEZ-02',
+    apellido_referencia: 'Benítez',
+    responsable_persona_id: 'per-4444',
+    domicilio_origen: 'Sector Costanera Sur',
+    observaciones: 'Familia derivada preventivamente.',
+    fecha_alta: '2026-09-03T09:30:00Z',
+  },
+];
+
+const initialEstadias: Estadia[] = [
+  {
+    id: 1,
+    persona_id: 'per-1111',
+    refugio_id: 1,
+    fecha_ingreso: '2026-09-03T07:45:00Z',
+    grupo_id: 101,
+    vinculo: 'jefe_hogar',
+    observaciones: 'Ingresó en buen estado general.',
+    registrado_por: 'usr-social-1',
   },
   {
-    id: 'not_3',
-    title: 'Restock de Kits de Higiene Requerido',
-    message: 'Quedan menos de 25 kits de higiene en Refugio N° 1. Se envió pedido prioritario a logística municipal.',
-    type: 'warning',
-    timestamp: 'Hoy, 09:15 hs',
-    author: 'Depósito Central',
-    shelterId: 'ref_1',
+    id: 2,
+    persona_id: 'per-2222',
+    refugio_id: 1,
+    fecha_ingreso: '2026-09-03T07:45:00Z',
+    grupo_id: 101,
+    vinculo: 'hijo',
+    observaciones: 'Acompañado por su madre.',
+    registrado_por: 'usr-social-1',
+  },
+  {
+    id: 3,
+    persona_id: 'per-3333',
+    refugio_id: 1,
+    fecha_ingreso: '2026-09-03T08:15:00Z',
+    vinculo: 'sin_vinculo',
+    observaciones: 'Ubicado en cama baja cerca de enfermería.',
+    registrado_por: 'usr-social-1',
+  },
+  {
+    id: 4,
+    persona_id: 'per-4444',
+    refugio_id: 2,
+    fecha_ingreso: '2026-09-03T09:30:00Z',
+    grupo_id: 102,
+    vinculo: 'jefe_hogar',
+    observaciones: 'Asignada litera 08.',
+    registrado_por: 'usr-social-1',
   },
 ];
 
 const ShelterContext = createContext<ShelterContextType | undefined>(undefined);
 
 export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<Perfil | null>(initialPerfiles[0]);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
-  const [currentRole, setCurrentRole] = useState<UserRole>('admin');
+  const [currentRole, setCurrentRole] = useState<RolUsuario>('administrador');
 
-  // Navigation Screens
   const [activeAdminScreen, setActiveAdminScreen] = useState<AdminScreenType>('dashboard');
-  const [activeSocialScreen, setActiveSocialScreen] = useState<SocialScreenType>('intake');
-  const [selectedShelterId, setSelectedShelterId] = useState<string | null>('ref_1');
+  const [activeSocialScreen, setActiveSocialScreen] = useState<SocialScreenType>('ingreso');
+  const [selectedRefugioId, setSelectedRefugioId] = useState<number | null>(1);
 
-  // Multi-Shelter Domain Collections
-  const [shelters, setShelters] = useState<Shelter[]>(initialShelters);
-  const [evacuees, setEvacuees] = useState<Evacuee[]>(initialEvacuees);
-  const [zones, setZones] = useState<ShelterZone[]>(initialZones);
-  const [resources, setResources] = useState<ResourceItem[]>(initialResources);
-  const [notices, setNotices] = useState<NoticeAlert[]>(initialNotices);
+  const [perfiles, setPerfiles] = useState<Perfil[]>(initialPerfiles);
+  const [refugios, setRefugios] = useState<Refugio[]>(initialRefugios);
+  const [asignaciones, setAsignaciones] = useState<Asignacion[]>(initialAsignaciones);
+  const [personas, setPersonas] = useState<Persona[]>(initialPersonas);
+  const [gruposFamiliares, setGruposFamiliares] = useState<GrupoFamiliar[]>(initialGruposFamiliares);
+  const [estadias, setEstadias] = useState<Estadia[]>(initialEstadias);
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -482,201 +272,149 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [toastMessage]);
 
-  const login = (email: string, password: string, role: UserRole, customName?: string) => {
-    const formattedName = customName || (email.split('@')[0].replace('.', ' ').toUpperCase());
-    const user: UserProfile = {
-      id: `usr_${Date.now()}`,
-      name: formattedName,
-      email,
-      role,
+  const login = (email: string, password: string, rol: RolUsuario, nombreCompleto?: string) => {
+    const formattedName = nombreCompleto || (email.split('@')[0].toUpperCase());
+    const newPerfil: Perfil = {
+      id: `usr-${Date.now()}`,
+      nombre_completo: formattedName,
+      rol,
+      activo: true,
     };
 
-    setCurrentUser(user);
-    setCurrentRole(role);
-    setToastMessage(`👋 Bienvenido ${user.name} (${role === 'admin' ? 'Administrador' : 'Comunicador Social'})`);
+    setCurrentUser(newPerfil);
+    setCurrentRole(rol);
+    setToastMessage(`👋 Sesión iniciada: ${newPerfil.nombre_completo} (${rol === 'administrador' ? 'Administrador' : 'Trabajador Social'})`);
   };
 
-  const register = (name: string, email: string, password: string, role: UserRole) => {
-    const user: UserProfile = {
-      id: `usr_${Date.now()}`,
-      name,
-      email,
-      role,
+  const register = (nombreCompleto: string, email: string, password: string, rol: RolUsuario) => {
+    const newPerfil: Perfil = {
+      id: `usr-${Date.now()}`,
+      nombre_completo: nombreCompleto,
+      rol,
+      activo: true,
     };
 
-    setCurrentUser(user);
-    setCurrentRole(role);
-    setToastMessage(`✅ Cuenta registrada e ingreso exitoso. ¡Bienvenido ${user.name}!`);
+    setPerfiles((prev) => [...prev, newPerfil]);
+    setCurrentUser(newPerfil);
+    setCurrentRole(rol);
+    setToastMessage(`✅ Perfil de ${newPerfil.nombre_completo} registrado en sistema.`);
   };
 
   const logout = () => {
     setCurrentUser(null);
-    setToastMessage('Sesión cerrada correctamente.');
+    setToastMessage('Sesión cerrada.');
   };
 
-  const addShelter = (data: Omit<Shelter, 'id' | 'occupied' | 'status'>) => {
-    const newShelterId = `ref_${Date.now()}`;
-    const newShelter: Shelter = {
+  // Crear Refugio (Tabla public.refugios)
+  const addRefugio = (data: Omit<Refugio, 'id' | 'creado_en' | 'actualizado_en'>) => {
+    const newId = Date.now();
+    const newRefugio: Refugio = {
       ...data,
-      id: newShelterId,
-      occupied: 0,
-      status: 'operativo',
-    };
-
-    setShelters((prev) => [...prev, newShelter]);
-
-    // Create initial standard zones for the new shelter
-    const defaultZones: ShelterZone[] = [
-      {
-        id: `zone_fam_${newShelterId}`,
-        shelterId: newShelterId,
-        name: 'Ala Familias',
-        code: `${newShelter.name.substring(0, 4).toUpperCase()}-ZA`,
-        capacity: Math.round(data.capacity * 0.5),
-        occupied: 0,
-        description: 'Sector destinado a grupos familiares con niños.',
-        category: 'familias',
-      },
-      {
-        id: `zone_gen_${newShelterId}`,
-        shelterId: newShelterId,
-        name: 'Alojamiento General',
-        code: `${newShelter.name.substring(0, 4).toUpperCase()}-ZB`,
-        capacity: Math.round(data.capacity * 0.5),
-        occupied: 0,
-        description: 'Módulos individuales de descanso.',
-        category: 'general',
-      },
-    ];
-
-    setZones((prev) => [...prev, ...defaultZones]);
-
-    // Create initial basic food inventory for the new shelter
-    const defaultFood: ResourceItem[] = [
-      {
-        id: `res_agua_${newShelterId}`,
-        shelterId: newShelterId,
-        category: 'agua',
-        name: 'Agua Potable (Bidones 5L)',
-        quantity: 50,
-        unit: 'bidones',
-        minThreshold: 40,
-        status: 'normal',
-        lastRestocked: new Date().toISOString().substring(0, 10),
-      },
-      {
-        id: `res_alimento_${newShelterId}`,
-        shelterId: newShelterId,
-        category: 'alimentos',
-        name: 'Raciones No Perecederas',
-        quantity: 150,
-        unit: 'raciones',
-        minThreshold: 80,
-        status: 'normal',
-        lastRestocked: new Date().toISOString().substring(0, 10),
-      },
-    ];
-
-    setResources((prev) => [...prev, ...defaultFood]);
-
-    setToastMessage(`🏢 Refugio "${newShelter.name}" creado con éxito en la red.`);
-  };
-
-  const addEvacuee = (evacueeData: Omit<Evacuee, 'id' | 'entryTimestamp'>) => {
-    const newId = `eva_${Date.now()}`;
-    const newEvacuee: Evacuee = {
-      ...evacueeData,
       id: newId,
-      entryTimestamp: new Date().toISOString(),
+      activo: true,
+      creado_en: new Date().toISOString(),
+      actualizado_en: new Date().toISOString(),
+      creado_por: currentUser?.id,
     };
 
-    setEvacuees((prev) => [newEvacuee, ...prev]);
-
-    // Automatically update shelter occupancy count
-    setShelters((prevShelters) =>
-      prevShelters.map((s) => {
-        if (s.id === evacueeData.shelterId) {
-          const newOcc = s.occupied + 1;
-          return {
-            ...s,
-            occupied: newOcc,
-            status: newOcc >= s.capacity ? 'lleno' : 'operativo',
-          };
-        }
-        return s;
-      })
-    );
-
-    // Automatically update zone occupancy
-    setZones((prevZones) =>
-      prevZones.map((z) => {
-        if (z.id === evacueeData.zoneId) {
-          return { ...z, occupied: z.occupied + 1 };
-        }
-        return z;
-      })
-    );
-
-    const targetShelter = shelters.find((s) => s.id === evacueeData.shelterId);
-    setToastMessage(`✅ Evacuado ${newEvacuee.firstName} ${newEvacuee.lastName} ingresado en "${targetShelter?.name || 'Refugio'}". Datos sincronizados con el Administrador.`);
+    setRefugios((prev) => [...prev, newRefugio]);
+    setToastMessage(`🏢 Refugio "${newRefugio.nombre}" creado exitosamente.`);
   };
 
-  const updateEvacueeStatus = (id: string, status: EvacueeStatus, notes?: string) => {
-    setEvacuees((prev) =>
+  // Crear Grupo Familiar (Tabla public.grupos_familiares)
+  const addGrupoFamiliar = (data: Omit<GrupoFamiliar, 'id' | 'fecha_alta' | 'creado_en' | 'actualizado_en'>) => {
+    const newId = Date.now();
+    const newGrupo: GrupoFamiliar = {
+      ...data,
+      id: newId,
+      fecha_alta: new Date().toISOString(),
+      creado_en: new Date().toISOString(),
+      actualizado_en: new Date().toISOString(),
+      creado_por: currentUser?.id,
+    };
+
+    setGruposFamiliares((prev) => [...prev, newGrupo]);
+    setToastMessage(`👨‍👩‍👧 Grupo Familiar "${newGrupo.codigo}" creado.`);
+  };
+
+  // Dar de alta Persona + Estadía (Tablas public.personas y public.estadias)
+  const addPersonaConEstadia = (
+    personaData: Omit<Persona, 'id' | 'creado_en' | 'actualizado_en'>,
+    estadiaData: Omit<Estadia, 'id' | 'persona_id' | 'fecha_ingreso' | 'creado_en' | 'actualizado_en'>,
+    nuevoGrupo?: { codigo: string; apellido_referencia: string; domicilio_origen?: string }
+  ) => {
+    const newPersonaId = `per-${Date.now()}`;
+    const normDni = personaData.numero_documento ? personaData.numero_documento.replace(/[^A-Za-z0-9]/g, '').toUpperCase() : undefined;
+
+    const newPersona: Persona = {
+      ...personaData,
+      id: newPersonaId,
+      numero_documento_norm: normDni,
+      creado_en: new Date().toISOString(),
+      actualizado_en: new Date().toISOString(),
+      creado_por: currentUser?.id,
+    };
+
+    let grupoIdAsignado = estadiaData.grupo_id;
+
+    // Si creó un nuevo grupo familiar en el mismo acto
+    if (nuevoGrupo) {
+      const newGrupoId = Date.now();
+      const newGrupoObj: GrupoFamiliar = {
+        id: newGrupoId,
+        refugio_id: estadiaData.refugio_id,
+        codigo: nuevoGrupo.codigo.toUpperCase(),
+        apellido_referencia: nuevoGrupo.apellido_referencia,
+        responsable_persona_id: newPersonaId,
+        domicilio_origen: nuevoGrupo.domicilio_origen,
+        fecha_alta: new Date().toISOString(),
+        creado_por: currentUser?.id,
+        creado_en: new Date().toISOString(),
+        actualizado_en: new Date().toISOString(),
+      };
+      setGruposFamiliares((prev) => [...prev, newGrupoObj]);
+      grupoIdAsignado = newGrupoId;
+    }
+
+    const newEstadia: Estadia = {
+      ...estadiaData,
+      id: Date.now(),
+      persona_id: newPersonaId,
+      grupo_id: grupoIdAsignado,
+      fecha_ingreso: new Date().toISOString(),
+      registrado_por: currentUser?.id,
+      creado_en: new Date().toISOString(),
+      actualizado_en: new Date().toISOString(),
+    };
+
+    setPersonas((prev) => [newPersona, ...prev]);
+    setEstadias((prev) => [newEstadia, ...prev]);
+
+    const targetRefugio = refugios.find((r) => r.id === estadiaData.refugio_id);
+    setToastMessage(`✅ Persona ${newPersona.apellido}, ${newPersona.nombre} registrada con estadía en "${targetRefugio?.nombre}".`);
+  };
+
+  // Registrar egreso de persona (Tabla public.estadias update fecha_egreso)
+  const registrarEgreso = (estadiaId: number, motivoEgreso: string, observacionesEgreso?: string) => {
+    const timestampNow = new Date().toISOString();
+
+    setEstadias((prev) =>
       prev.map((e) => {
-        if (e.id === id) {
+        if (e.id === estadiaId) {
           return {
             ...e,
-            status,
-            medicalNotes: notes ? `${e.medicalNotes || ''} [Update: ${notes}]` : e.medicalNotes,
+            fecha_egreso: timestampNow,
+            motivo_egreso: motivoEgreso,
+            observaciones: observacionesEgreso ? `${e.observaciones || ''} [Egreso: ${observacionesEgreso}]` : e.observaciones,
+            egreso_registrado_por: currentUser?.id,
+            actualizado_en: timestampNow,
           };
         }
         return e;
       })
     );
 
-    setToastMessage(`Estado de evacueado actualizado a "${status.toUpperCase()}". Sincronizado en tiempo real.`);
-  };
-
-  const restockResource = (id: string, amountToAdd: number) => {
-    setResources((prev) =>
-      prev.map((res) => {
-        if (res.id === id) {
-          const newQty = res.quantity + amountToAdd;
-          let newStatus: ResourceItem['status'] = 'normal';
-          if (newQty < res.minThreshold / 2) {
-            newStatus = 'critico';
-          } else if (newQty < res.minThreshold) {
-            newStatus = 'bajo';
-          }
-
-          return {
-            ...res,
-            quantity: newQty,
-            status: newStatus,
-            lastRestocked: new Date().toISOString().replace('T', ' ').substring(0, 16),
-          };
-        }
-        return res;
-      })
-    );
-
-    setToastMessage(`📦 Stock de insumo reabastecido (+${amountToAdd}).`);
-  };
-
-  const addNotice = (title: string, message: string, type: NoticeAlert['type'], shelterId?: string) => {
-    const newNotice: NoticeAlert = {
-      id: `not_${Date.now()}`,
-      title,
-      message,
-      type,
-      timestamp: 'Justo ahora',
-      author: currentUser ? currentUser.name : (currentRole === 'admin' ? 'Administración General' : 'Comunicador Social'),
-      shelterId,
-    };
-
-    setNotices((prev) => [newNotice, ...prev]);
-    setToastMessage(`📢 Anuncio publicado en la bitácora.`);
+    setToastMessage(`🚪 Egreso registrado correctamente en sistema.`);
   };
 
   return (
@@ -688,28 +426,27 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
         login,
         register,
         logout,
-
         currentRole,
         setCurrentRole,
-
         activeAdminScreen,
         setActiveAdminScreen,
         activeSocialScreen,
         setActiveSocialScreen,
-        selectedShelterId,
-        setSelectedShelterId,
+        selectedRefugioId,
+        setSelectedRefugioId,
 
-        shelters,
-        evacuees,
-        zones,
-        resources,
-        notices,
+        perfiles,
+        refugios,
+        asignaciones,
+        personas,
+        gruposFamiliares,
+        estadias,
 
-        addShelter,
-        addEvacuee,
-        updateEvacueeStatus,
-        restockResource,
-        addNotice,
+        addRefugio,
+        addPersonaConEstadia,
+        registrarEgreso,
+        addGrupoFamiliar,
+
         toastMessage,
         setToastMessage,
       }}
@@ -722,7 +459,7 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
 export const useShelter = () => {
   const context = useContext(ShelterContext);
   if (!context) {
-    throw new Error('useShelter must be used within a ShelterProvider');
+    throw new Error('useShelter debe ser utilizado dentro de un ShelterProvider');
   }
   return context;
 };

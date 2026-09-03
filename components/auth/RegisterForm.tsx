@@ -5,7 +5,7 @@ import { useShelter } from '@/context/ShelterContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { UserRole } from '@/types/shelter';
+import { RolUsuario } from '@/types/shelter';
 import { Building2, UserPlus, Shield, ClipboardList, Lock, Mail, User } from 'lucide-react';
 
 interface RegisterFormProps {
@@ -18,7 +18,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('social_worker');
+  const [rol, setRol] = useState<RolUsuario>('trabajador_social');
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,7 +31,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
     }
 
     if (name && email && password) {
-      register(name, email, password, role);
+      register(name, email, password, rol);
     }
   };
 
@@ -44,7 +44,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           </div>
           <CardTitle className="text-2xl font-extrabold tracking-tight">Crear Cuenta en RefugIA</CardTitle>
           <CardDescription>
-            Alta de operador para refugio de emergencia y asistencia social
+            Alta de Perfil (public.perfiles) para Operadores del Sistema
           </CardDescription>
         </CardHeader>
 
@@ -58,7 +58,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-                Nombre y Apellido *
+                Nombre Completo *
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
@@ -97,9 +97,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setRole('admin')}
+                  onClick={() => setRol('administrador')}
                   className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-bold transition-all ${
-                    role === 'admin'
+                    rol === 'administrador'
                       ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs'
                       : 'border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800'
                   }`}
@@ -110,15 +110,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
 
                 <button
                   type="button"
-                  onClick={() => setRole('social_worker')}
+                  onClick={() => setRol('trabajador_social')}
                   className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-bold transition-all ${
-                    role === 'social_worker'
+                    rol === 'trabajador_social'
                       ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs'
                       : 'border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800'
                   }`}
                 >
                   <ClipboardList className="h-4 w-4" />
-                  Comunicador Social
+                  Trabajador Social
                 </button>
               </div>
             </div>

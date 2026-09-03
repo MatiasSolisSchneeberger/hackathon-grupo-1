@@ -5,7 +5,7 @@ import { useShelter } from '@/context/ShelterContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { UserRole } from '@/types/shelter';
+import { RolUsuario } from '@/types/shelter';
 import { Building2, LogIn, Shield, ClipboardList, Lock, Mail, Sparkles } from 'lucide-react';
 
 interface LoginFormProps {
@@ -16,19 +16,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const { login } = useShelter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('admin');
+  const [rol, setRol] = useState<RolUsuario>('administrador');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && password) {
-      login(email, password, role);
+      login(email, password, rol);
     }
   };
 
-  const handleDemoLogin = (selectedRole: UserRole) => {
-    const demoEmail = selectedRole === 'admin' ? 'admin@refugia.org' : 'social@refugia.org';
-    const demoName = selectedRole === 'admin' ? 'Lic. Carlos Quiroga (Director)' : 'Lic. Sofía Martínez (Trabajadora Social)';
-    login(demoEmail, 'demo123', selectedRole, demoName);
+  const handleDemoLogin = (selectedRol: RolUsuario) => {
+    const demoEmail = selectedRol === 'administrador' ? 'admin@refugia.org' : 'social@refugia.org';
+    const demoName = selectedRol === 'administrador' ? 'Lic. Fernando Rossi (Administrador)' : 'Lic. Sofía Martínez (Trabajadora Social)';
+    login(demoEmail, 'demo123', selectedRol, demoName);
   };
 
   return (
@@ -40,7 +40,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
           </div>
           <CardTitle className="text-2xl font-extrabold tracking-tight">Acceso a RefugIA</CardTitle>
           <CardDescription>
-            Sistema de Gestión de Refugios de Emergencia & Asistencia Social
+            Sistema de Gestión de Refugios & Asistencia Social
           </CardDescription>
         </CardHeader>
 
@@ -87,9 +87,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setRole('admin')}
+                  onClick={() => setRol('administrador')}
                   className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-bold transition-all ${
-                    role === 'admin'
+                    rol === 'administrador'
                       ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs'
                       : 'border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800'
                   }`}
@@ -100,15 +100,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
 
                 <button
                   type="button"
-                  onClick={() => setRole('social_worker')}
+                  onClick={() => setRol('trabajador_social')}
                   className={`flex items-center justify-center gap-2 p-2.5 rounded-lg border text-xs font-bold transition-all ${
-                    role === 'social_worker'
+                    rol === 'trabajador_social'
                       ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs'
                       : 'border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800'
                   }`}
                 >
                   <ClipboardList className="h-4 w-4" />
-                  Comunicador Social
+                  Trabajador Social
                 </button>
               </div>
             </div>
@@ -129,7 +129,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                 type="button"
                 variant="outline"
                 size="xs"
-                onClick={() => handleDemoLogin('admin')}
+                onClick={() => handleDemoLogin('administrador')}
                 className="text-[11px] border-blue-200 text-blue-700 dark:border-blue-900 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950"
               >
                 <Sparkles className="h-3 w-3 mr-1 text-blue-500" />
@@ -139,11 +139,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
                 type="button"
                 variant="outline"
                 size="xs"
-                onClick={() => handleDemoLogin('social_worker')}
+                onClick={() => handleDemoLogin('trabajador_social')}
                 className="text-[11px] border-emerald-200 text-emerald-700 dark:border-emerald-900 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950"
               >
                 <Sparkles className="h-3 w-3 mr-1 text-emerald-500" />
-                Entrar como Comunicador
+                Trabajador Social
               </Button>
             </div>
           </div>

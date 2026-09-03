@@ -1,107 +1,106 @@
-export type UserRole = 'admin' | 'social_worker';
+export type RolUsuario = 'administrador' | 'trabajador_social';
 
-export type EvacuationReason = 'inundacion' | 'incendio' | 'temporal' | 'derrumbe' | 'otro';
+export type TipoDocumento = 'dni' | 'pasaporte' | 'otro';
 
-export type Gender = 'masculino' | 'femenino' | 'otro' | 'no_especifica';
+export type Genero = 'femenino' | 'masculino' | 'otro' | 'no_declara';
 
-export type EvacueeStatus = 'ingresado' | 'en_transito' | 'derivado_hospital' | 'egresado';
+export type VinculoFamiliar = 'jefe_hogar' | 'pareja' | 'hijo' | 'familiar' | 'sin_vinculo';
 
-export interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  avatarUrl?: string;
+// Tabla public.perfiles
+export interface Perfil {
+  id: string; // uuid
+  nombre_completo: string;
+  rol: RolUsuario;
+  activo: boolean;
+  creado_en?: string;
+  actualizado_en?: string;
 }
 
-export interface Vulnerabilities {
-  isMinor: boolean;
-  isElderly: boolean;
-  isPregnant: boolean;
-  hasDisabledMobility: boolean;
-  hasChronicCondition: boolean;
+// Tabla public.refugios
+export interface Refugio {
+  id: number; // bigint
+  nombre: string;
+  direccion: string;
+  localidad: string; // default 'Corrientes'
+  capacidad: number;
+  telefono?: string;
+  referente?: string;
+  observaciones?: string;
+  activo: boolean;
+  latitud?: number;
+  longitud?: number;
+  creado_en?: string;
+  actualizado_en?: string;
+  creado_por?: string;
 }
 
-export interface Evacuee {
-  id: string;
-  shelterId: string; // Refugio al que pertenece
-  firstName: string;
-  lastName: string;
-  dni: string;
-  age: number;
-  gender: Gender;
-  phone?: string;
-  originNeighborhood: string;
-  evacuationReason: EvacuationReason;
-  familyGroupId?: string;
-  familyRole?: 'jefe_hogar' | 'pareja' | 'hijo' | 'familiar' | 'individual';
-  zoneId: string;
-  bedNumber?: string;
-  vulnerabilities: Vulnerabilities;
-  medicalNotes?: string;
-  dietaryNotes?: string;
-  status: EvacueeStatus;
-  entryTimestamp: string;
-  registeredBy: string;
+// Tabla public.asignaciones
+export interface Asignacion {
+  usuario_id: string; // uuid
+  refugio_id: number; // bigint
+  creado_en?: string;
+  creado_por?: string;
 }
 
-export interface ShelterZone {
-  id: string;
-  shelterId: string;
-  name: string;
-  code: string;
-  capacity: number;
-  occupied: number;
-  description: string;
-  category: 'familias' | 'adultos_mayores' | 'general' | 'medica_aislamiento';
+// Tabla public.personas
+export interface Persona {
+  id: string; // uuid
+  tipo_documento: TipoDocumento;
+  numero_documento?: string;
+  numero_documento_norm?: string;
+  apellido: string;
+  nombre: string;
+  fecha_nacimiento?: string; // date 'YYYY-MM-DD'
+  genero: Genero;
+  telefono?: string;
+  observaciones?: string;
+  creado_en?: string;
+  actualizado_en?: string;
+  creado_por?: string;
 }
 
-export interface ResourceItem {
-  id: string;
-  shelterId: string; // Refugio al que pertenece este alimento/insumo
-  category: 'alimentos' | 'agua' | 'abrigo' | 'higiene' | 'medicina';
-  name: string;
-  quantity: number;
-  unit: string;
-  minThreshold: number;
-  status: 'normal' | 'bajo' | 'critico';
-  lastRestocked: string;
+// Tabla public.grupos_familiares
+export interface GrupoFamiliar {
+  id: number; // bigint
+  refugio_id: number; // bigint
+  codigo: string;
+  apellido_referencia: string;
+  responsable_persona_id?: string; // uuid
+  domicilio_origen?: string;
+  observaciones?: string;
+  fecha_alta: string;
+  fecha_cierre?: string;
+  creado_por?: string;
+  creado_en?: string;
+  actualizado_en?: string;
 }
 
-export interface Shelter {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  managerName: string;
-  phone: string;
-  capacity: number;
-  occupied: number;
-  status: 'operativo' | 'lleno' | 'mantenimiento';
-  infrastructureType: 'polideportivo' | 'escuela' | 'centro_comunitario' | 'otro';
-}
-
-export interface NoticeAlert {
-  id: string;
-  title: string;
-  message: string;
-  type: 'warning' | 'info' | 'urgent';
-  timestamp: string;
-  author: string;
-  shelterId?: string; // Opcional si es específico de un refugio
+// Tabla public.estadias
+export interface Estadia {
+  id: number; // bigint
+  persona_id: string; // uuid
+  refugio_id: number; // bigint
+  fecha_ingreso: string; // timestamp
+  fecha_egreso?: string; // timestamp
+  motivo_egreso?: string;
+  observaciones?: string;
+  registrado_por?: string;
+  egreso_registrado_por?: string;
+  grupo_id?: number; // bigint
+  vinculo: VinculoFamiliar;
+  creado_en?: string;
+  actualizado_en?: string;
 }
 
 export type AdminScreenType = 
   | 'dashboard'
-  | 'shelters'
-  | 'shelter_detail'
-  | 'food_inventory'
-  | 'evacuees'
-  | 'notices';
+  | 'refugios'
+  | 'perfiles'
+  | 'estadias'
+  | 'grupos';
 
 export type SocialScreenType = 
-  | 'intake'
-  | 'registry'
-  | 'family_search'
-  | 'health_diet'
-  | 'shift_report';
+  | 'ingreso'
+  | 'estadias_activas'
+  | 'grupos'
+  | 'reunificacion';
